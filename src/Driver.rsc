@@ -18,6 +18,10 @@ import lang::java::refactoring::Diamond;
 import lang::java::refactoring::AnonymousToLambda;
 import lang::java::refactoring::ExistPatternToLambda;
 import lang::java::refactoring::FilterPattern;
+import lang::java::refactoring::IntegerSumPattern;
+import lang::java::refactoring::JUnitClassDeclaration;
+import lang::java::refactoring::JUnitTestCaseDeclaration;
+
 
 import lang::java::refactoring::forloop::EnhancedForLoopRefactorer;
 import lang::java::analysis::ExceptionFinder;
@@ -58,7 +62,10 @@ public void refactorProjects(loc input, bool verbose = true) {
           case /DI/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorDiamond, "diamond");
           case /AC/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorAnonymousInnerClass, "aic");
           case /EP/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorExistPattern, "exist pattern");
-          case /FP/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorFilterPattern, "filter pattern");          
+          case /FP/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorFilterPattern, "filter pattern");
+          case /IS/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorIntegerSumPattern, "integer list sum pattern");
+          case /JUCD/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorJUnitClassDeclaration, "JUnit class declaration");
+          case /JUTD/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorJUnitTestCaseDeclaration, "JUnit class declaration");
           case /FUNC/: {
           	  checkedExceptionClasses = findCheckedExceptions(projectFiles);
               executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorForLoopToFunctional, "ForLoopToFunctional");
@@ -78,6 +85,7 @@ public void executeTransformations(list[loc] files, int percent, bool verbose, t
   int acc = 0;
   for(file <- files) {
      contents = readFile(file);
+     
      try {
        unit = parse(#CompilationUnit, contents);
        tuple[int, CompilationUnit] res = transformation(unit);
