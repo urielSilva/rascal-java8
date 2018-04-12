@@ -1,7 +1,6 @@
 package com.rascaljava;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -16,8 +15,15 @@ public class ClassDefinition {
 	private List<MethodDefinition> methods = new ArrayList<>();
 	private List<FieldDefinition> fields = new ArrayList<>();
 	
-	public void addMethodDefinition(String name, String returnType, Map<String, String> args) {
-		methods.add(new MethodDefinition(name, returnType, args));
+	public ClassDefinition() {
+	}
+	
+	public ClassDefinition(String qualifiedName) {
+		this.qualifiedName = qualifiedName;
+	}
+	
+	public void addMethodDefinition(String name, String returnType, Map<String, String> args, List<ClassDefinition> exceptions) {
+		methods.add(new MethodDefinition(name, returnType, args, exceptions));
 	}
 	
 	public void addFieldDefinition(String name, String type) {
@@ -63,61 +69,7 @@ public class ClassDefinition {
 	public void setFields(List<FieldDefinition> fields) {
 		this.fields = fields;
 	}
-
-	private class MethodDefinition {
-		private String name;
-		private String returnType;
-		private Map<String, String> args = new HashMap<>();
-		
-		public MethodDefinition(String name, String returnType, Map<String, String> args) {
-			this.name = name;
-			this.returnType = returnType;
-			this.args = args;
-		}
-		
-		public String getName() {
-			return name;
-		}
-		public void setName(String name) {
-			this.name = name;
-		}
-		public String getReturnType() {
-			return returnType;
-		}
-		public void setReturnType(String returnType) {
-			this.returnType = returnType;
-		}
-		public Map<String, String> getArgs() {
-			return args;
-		}
-		public void setArgs(Map<String, String> args) {
-			this.args = args;
-		}
-		
-	}
 	
-	private class FieldDefinition {
-		private String name;
-		private String type;
-		
-		public FieldDefinition(String name, String type) {
-			this.name = name;
-			this.type = type;
-		}
-		public String getName() {
-			return name;
-		}
-		public void setName(String name) {
-			this.name = name;
-		}
-		public String getType() {
-			return type;
-		}
-		public void setType(String type) {
-			this.type = type;
-		}
-	}
-
 	public List<String> getAnnotations() {
 		return annotations;
 	}
@@ -126,7 +78,3 @@ public class ClassDefinition {
 		this.annotations = annotations;
 	}
 }
-
-
-
-

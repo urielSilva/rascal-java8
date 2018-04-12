@@ -1,11 +1,16 @@
 package com.rascaljava;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -17,16 +22,20 @@ import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.expr.AnnotationExpr;
 import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.google.gson.Gson;
-import java.sql.*;
+import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
+import com.google.common.collect.Multiset.Entry;
 
 public class CompilationUnitProcessor {
 
 	private CompilationUnit compilationUnit;
 	
-	private Connection connection;
+	private DB dbConnection;
+	
 	public CompilationUnitProcessor() {
-		setupDb();
+		dbConnection = DB.getInstance();
 	}
 
 	public void processCompilationUnit() {
@@ -34,50 +43,9 @@ public class CompilationUnitProcessor {
 		processClassInformation(classDef);
 		processMethodsInformation(classDef);
 		processFieldsInformation(classDef);
-//		System.out.println(new Gson().toJson(classDef));
-		saveToDb(classDef);
+		dbConnection.saveToDb(classDef);
 	}
 
-	private void setupDb() {
-		try {
-			Class.forName("org.h2.Driver");
-			connection = DriverManager.
-			        getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "", "");
-			PreparedStatement stmt = connection.prepareStatement("CREATE TABLE CLASS_DEFINITION(content CLOB)");
-			stmt.execute();
-			stmt.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public Connection getConnection() {
-		return connection;
-	}
-
-	public void saveToDb(ClassDefinition classDef) {
-	    try {
-			PreparedStatement stmt = connection.prepareStatement("INSERT INTO CLASS_DEFINITION values(?)");
-			stmt.setString(1, new Gson().toJson(classDef));
-			stmt.executeUpdate();
-			stmt.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
-	
-	public void fetchFromDb() {
-		try {
-			PreparedStatement stmt = connection.prepareStatement("SELECT COUNT(*) FROM CLASS_DEFINITION");
-			ResultSet rs = stmt.executeQuery();
-			while(rs.next()) {
-				System.out.println("count: " + rs.getInt(1));
-			}
-			connection.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-		}
-	}
 	
 	public void processClassInformation(ClassDefinition classDef) {
 		Optional<ClassOrInterfaceDeclaration> opClassDec = compilationUnit.findFirst(ClassOrInterfaceDeclaration.class);
@@ -111,7 +79,13 @@ public class CompilationUnitProcessor {
 		compilationUnit.findAll(MethodDeclaration.class).forEach((m) -> {
 			Map<String, String> args = m.getParameters().stream()
 					.collect(Collectors.toMap((p) -> p.getNameAsString(), (p) -> p.getType().toString()));
-			classDef.addMethodDefinition(m.getNameAsString(), m.getType().toString(), args);
+	    		
+			List<ClassDefinition> exceptions = m
+					.getThrownExceptions()
+					.stream()
+					.map((e) -> new ClassDefinition(e.findCompilationUnit().get().getPackageDeclaration().get().getNameAsString() + "." + e.toString()))
+					.collect(Collectors.toList());
+			classDef.addMethodDefinition(m.getNameAsString(), m.getType().toString(), args, exceptions );
 		});
 	}
 	
@@ -141,5 +115,4 @@ public class CompilationUnitProcessor {
 	public void setCompilationUnit(CompilationUnit compilationUnit) {
 		this.compilationUnit = compilationUnit;
 	}
-
 }

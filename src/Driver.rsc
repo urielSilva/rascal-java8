@@ -54,6 +54,7 @@ public void refactorProjects(loc input, bool verbose = true) {
        logMessage("[Project Analyzer] processing project: " + projectDescriptor[0]);
       
        list[loc] projectFiles = findAllFiles(|file:///| + projectDescriptor[4], "java");
+       initDB(projectDescriptor[4]);
        println("Processing " + projectDescriptor[0] + "...");
        switch(projectDescriptor[2]) {
           case /MC/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorMultiCatch, "multicatch");
@@ -96,7 +97,7 @@ public void executeTransformations(list[loc] files, int percent, bool verbose, t
        }
        acc += 1;
      }
-     catch : { 
+     catch: {
      	errors += 1; 
         println("  file processed with errors!");
      };
@@ -159,6 +160,10 @@ int numberOfTransformationsToApply(int total, int percent) {
    }
    return res;
 }
+
+@javaClass{com.rascaljava.RascalJavaInterface}
+java void initDB(str projectPath);
+
 
 void logMessage(str message) {
   loc out = |project://rascal-Java8/output/|;
