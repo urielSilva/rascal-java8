@@ -97,7 +97,7 @@ public void executeTransformations(list[loc] files, int percent, bool verbose, t
        }
        acc += 1;
      }
-     catch: {
+     catch : {
      	errors += 1; 
         println("  file processed with errors!");
      };
