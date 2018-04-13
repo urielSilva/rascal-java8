@@ -2,13 +2,19 @@ package com.rascaljava;
 
 import java.io.BufferedReader;
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStreamReader;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
+import com.github.javaparser.symbolsolver.resolution.SymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
+import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
 
@@ -28,28 +34,45 @@ public class RascalJavaInterface {
     	populateDb(projectPath.getValue());
     }
     
+    public void initDB(String projectPath) {
+    	DB.getInstance().setup();
+    	populateDb(projectPath);
+    }
+    
     public IValue testeJava(IString exc) {
     	return vf.bool(isCheckedException(exc.getValue()));
     }
     
-    public static void populateDb(String projectPath) {
-    	List<File> result = IOUtil.findAllFiles(projectPath, "java");
-		CompilationUnitProcessor processor = new CompilationUnitProcessor();
+    public void populateDb(String projectPath) {
+    	List<File> result = IOUtil.findAllFiles(projectPath + "/src/main", "java");
+		CompilationUnitProcessor processor = new CompilationUnitProcessor(projectPath, getTypeSolver(projectPath));
 		List<CompilationUnit> compiledFiles = result.stream().map(CompilationUnitProcessor::getCompilationUnit).collect(Collectors.toList());
 		compiledFiles.forEach((cu) -> { processor.setCompilationUnit(cu); processor.processCompilationUnit();});
     }
     
-    public static void main(String[] args) {
-//    	DB.getInstance().setup();
-//		populateDb("/Users/uriel/Documents/Projetos/poup/poupweb/src");
-//		Integer count = DB.getInstance().fetchFromDb();
-//		System.out.println("count: " + count);
-//		System.out.println(isCheckedException("IOException"));
-    	StringBuffer output = new StringBuffer();
+    private static CombinedTypeSolver getTypeSolver(String projectPath) {
+		CombinedTypeSolver solver;
+		solver = new CombinedTypeSolver();
+		solver.add(new JavaParserTypeSolver(new File(projectPath + "/src/main/java")));
+		solver.add(new ReflectionTypeSolver());
+		copyProjectJars(projectPath);
+		List<File> jars = IOUtil.findAllFiles(projectPath + "/dependencies", "jar");
+		jars.forEach((jar) -> {
+			try {
+				solver.add(new JarTypeSolver(jar.getAbsolutePath()));
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		});
+		return solver;
+	}
+
+	private static void copyProjectJars(String projectPath) {
+		StringBuffer output = new StringBuffer();
     	Runtime rt = Runtime.getRuntime();
     	try {
     		ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mvn","dependency:copy-dependencies", "-DoutputDirectory=dependencies", "-DoverWriteSnapshots=true", "-DoverWriteReleases=false");
-    		pb.directory(new File("/Users/uriel/Documents/Projetos/mavenproject"));
+    		pb.directory(new File(projectPath));
     		Process pr = pb.start();
 			pr.waitFor();
 			BufferedReader reader = 
@@ -63,9 +86,12 @@ public class RascalJavaInterface {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
-    	
-    	System.out.println(output.toString());
+	}
 
+	public static void main(String[] args) {
+		new RascalJavaInterface(null).initDB("/Users/uriel/Documents/Projetos/mavenproject");
+//		DB.getInstance().fetchFromDb();
+		System.out.println(isSuperClass("Teste", "App"));
 	}
     
     public IValue isCheckedException(IString exc) {
@@ -81,14 +107,21 @@ public class RascalJavaInterface {
     }
     
     public static boolean isCheckedException(String exc) {
-		String exception = DB.getInstance().findQualifiedName(exc);
-		if(exception != null) {
+//		String exception = DB.getInstance().findQualifiedName(exc);
+//		if(exception != null) {
 			CombinedTypeSolver solver = new CombinedTypeSolver();
-			solver.add(new JavaParserTypeSolver(new File("/Users/uriel/Documents/Projetos/poup/poupweb/src")));
+			solver.add(new JavaParserTypeSolver(new File("/Users/uriel/Documents/Projetos/mavenproject/src/main")));
 			solver.add(new ReflectionTypeSolver());
-			ResolvedReferenceTypeDeclaration res = solver.solveType(exception);
-			return res.getAllAncestors().stream().anyMatch((a) -> a.getQualifiedName().equalsIgnoreCase("java.lang.Exception"));
-		}
+			ResolvedReferenceTypeDeclaration res = solver.solveType("org.teste.mavenproject.App");
+			System.out.println(res.getQualifiedName());
+//		}
 		return false;
+    }
+    
+    public static boolean isSuperClass(String clazz, String superClazz) {
+    	String qualifiedClazz = DB.getInstance().findQualifiedName(clazz);
+    	String qualifiedSuperClazz = DB.getInstance().findQualifiedName(superClazz);
+    	List<ClassDefinition> allAncestors = DB.getInstance().getAllAncestors(qualifiedClazz);
+    	return allAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedSuperClazz));
     }
 }

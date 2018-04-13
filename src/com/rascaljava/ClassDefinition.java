@@ -4,13 +4,17 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import com.github.javaparser.resolution.declarations.ResolvedClassDeclaration;
+
 public class ClassDefinition {
 	
+	private Integer id;
 	private String qualifiedName;
 	
-	private List<String> extendedTypes = new ArrayList<>();
+	private ClassDefinition superClass;
 	private List<String> implementedTypes = new ArrayList<>();
 	private List<String> annotations = new ArrayList<>();
+	private boolean isClass;
 	
 	private List<MethodDefinition> methods = new ArrayList<>();
 	private List<FieldDefinition> fields = new ArrayList<>();
@@ -20,6 +24,11 @@ public class ClassDefinition {
 	
 	public ClassDefinition(String qualifiedName) {
 		this.qualifiedName = qualifiedName;
+	}
+	
+	@Override
+	public String toString() {
+		return qualifiedName;
 	}
 	
 	public void addMethodDefinition(String name, String returnType, Map<String, String> args, List<ClassDefinition> exceptions) {
@@ -38,12 +47,12 @@ public class ClassDefinition {
 		this.qualifiedName = qualifiedName;
 	}
 
-	public List<String> getExtendedTypes() {
-		return extendedTypes;
+	public ClassDefinition getSuperClass() {
+		return superClass;
 	}
 
-	public void setExtendedTypes(List<String> extendedTypes) {
-		this.extendedTypes = extendedTypes;
+	public void setSuperClass(ClassDefinition superClass) {
+		this.superClass = superClass;
 	}
 
 	public List<String> getImplementedTypes() {
@@ -76,5 +85,21 @@ public class ClassDefinition {
 
 	public void setAnnotations(List<String> annotations) {
 		this.annotations = annotations;
+	}
+
+	public boolean isClass() {
+		return isClass;
+	}
+
+	public void setClass(boolean isClass) {
+		this.isClass = isClass;
+	}
+
+	public Integer getId() {
+		return id;
+	}
+
+	public void setId(Integer id) {
+		this.id = id;
 	}
 }
