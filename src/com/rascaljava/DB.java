@@ -172,7 +172,7 @@ public class DB {
 			stmt = connection.prepareStatement(
 				"SELECT * FROM CLASS_DEFINITION WHERE qualified_name like ? "
 			);
-			stmt.setString(1, "%" + className + "%");
+			stmt.setString(1, "%." + className);
 			ResultSet rs = stmt.executeQuery();
 			
 			if(rs.next()) {
@@ -217,7 +217,21 @@ public class DB {
 		} catch(SQLException e) {
 			e.printStackTrace();
 		}
-		return null;
+		return new ArrayList<>();
 		
 	}
+
+	public Integer countInserted() {
+		try {
+			PreparedStatement stmt = connection.prepareStatement("SELECT count(*) from CLASS_DEFINITION");
+			ResultSet rs = stmt.executeQuery();
+			if (rs.next()) {
+				return rs.getInt(1);
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return 0;
+	}
+	
 }

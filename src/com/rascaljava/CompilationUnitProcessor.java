@@ -25,7 +25,7 @@ public class CompilationUnitProcessor {
 	
 	private CombinedTypeSolver solver;
 	
-	public CompilationUnitProcessor(String projectPath, CombinedTypeSolver solver) {
+	public CompilationUnitProcessor(CombinedTypeSolver solver) {
 		dbConnection = DB.getInstance();
 		this.solver =  solver;
 	}
@@ -39,11 +39,14 @@ public class CompilationUnitProcessor {
 
 	
 	public ClassDefinition processClass(ResolvedReferenceTypeDeclaration classDec) {
-		ClassDefinition classDef = processClassInformation(classDec);
-		classDef.setMethods(processMethodsInformation(classDec));
-		classDef.setFields(processFieldsInformation(classDec));
-		dbConnection.saveToDb(classDef);
-		return classDef;
+		if(dbConnection.findByQualifiedName(classDec.getQualifiedName()) == null) {
+			ClassDefinition classDef = processClassInformation(classDec);
+			classDef.setMethods(processMethodsInformation(classDec));
+			classDef.setFields(processFieldsInformation(classDec));
+			dbConnection.saveToDb(classDef);
+			return classDef;
+		}
+		return null;
 	}
 
 	public ClassDefinition processClassInformation(ResolvedReferenceTypeDeclaration clazz) {

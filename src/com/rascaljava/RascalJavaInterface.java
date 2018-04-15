@@ -1,18 +1,12 @@
 package com.rascaljava;
 
-import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.sql.ResultSet;
-import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.util.List;
-import java.util.Map;
 import java.util.stream.Collectors;
 
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
-import com.github.javaparser.symbolsolver.resolution.SymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
@@ -29,28 +23,35 @@ public class RascalJavaInterface {
        this.vf = vf;
     }
     
-    public void initDB(IString projectPath) {
+    public IValue initDB(IString projectPath) {
     	DB.getInstance().setup();
     	populateDb(projectPath.getValue());
+    	return vf.integer(DB.getInstance().countInserted());
     }
     
     public void initDB(String projectPath) {
     	DB.getInstance().setup();
     	populateDb(projectPath);
-    }
-    
-    public IValue testeJava(IString exc) {
-    	return vf.bool(isCheckedException(exc.getValue()));
+    	System.out.println(DB.getInstance().countInserted());
     }
     
     public void populateDb(String projectPath) {
-    	List<File> result = IOUtil.findAllFiles(projectPath + "/src/main", "java");
-		CompilationUnitProcessor processor = new CompilationUnitProcessor(projectPath, getTypeSolver(projectPath));
+		CombinedTypeSolver typeSolver = getTypeSolver(projectPath);
+		CompilationUnitProcessor processor = new CompilationUnitProcessor(typeSolver);
+		populateNativeExceptions(processor, typeSolver);
+		
+		
+		List<File> result = IOUtil.findAllFiles(projectPath + "/src/main", "java");
 		List<CompilationUnit> compiledFiles = result.stream().map(CompilationUnitProcessor::getCompilationUnit).collect(Collectors.toList());
 		compiledFiles.forEach((cu) -> { processor.setCompilationUnit(cu); processor.processCompilationUnit();});
     }
     
-    private static CombinedTypeSolver getTypeSolver(String projectPath) {
+    public void populateNativeExceptions(CompilationUnitProcessor processor, CombinedTypeSolver solver) {
+    	processor.processClass(solver.solveType("java.io.IOException"));
+    	processor.processClass(solver.solveType("java.lang.Exception"));
+    }
+
+	public static CombinedTypeSolver getTypeSolver(String projectPath) {
 		CombinedTypeSolver solver;
 		solver = new CombinedTypeSolver();
 		solver.add(new JavaParserTypeSolver(new File(projectPath + "/src/main/java")));
@@ -67,61 +68,65 @@ public class RascalJavaInterface {
 		return solver;
 	}
 
-	private static void copyProjectJars(String projectPath) {
-		StringBuffer output = new StringBuffer();
-    	Runtime rt = Runtime.getRuntime();
+	public static void copyProjectJars(String projectPath) {
+		System.out.println("Starting JARs download. at " + new Timestamp(System.currentTimeMillis()));
     	try {
     		ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mvn","dependency:copy-dependencies", "-DoutputDirectory=dependencies", "-DoverWriteSnapshots=true", "-DoverWriteReleases=false");
     		pb.directory(new File(projectPath));
     		Process pr = pb.start();
 			pr.waitFor();
-			BufferedReader reader = 
-                            new BufferedReader(new InputStreamReader(pr.getInputStream()));
-
-                        String line = "";			
-			while ((line = reader.readLine())!= null) {
-				output.append(line + "\n");
-			}
+			System.out.println("JARs downloaded successfully at "  + new Timestamp(System.currentTimeMillis()));
 		} catch (Exception e) {
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}
 	}
 
 	public static void main(String[] args) {
-		new RascalJavaInterface(null).initDB("/Users/uriel/Documents/Projetos/mavenproject");
-//		DB.getInstance().fetchFromDb();
-		System.out.println(isSuperClass("Teste", "App"));
+		new RascalJavaInterface(null).initDB("/Users/uriel/Documents/Projetos/pessoal/sistemaTG");
+		DB.getInstance().fetchFromDb();
+		System.out.println(isRelated("Exception", "IOException"));
 	}
     
-    public IValue isCheckedException(IString exc) {
-		String exception = DB.getInstance().findQualifiedName(exc.getValue());
-		if(exception != null) {
-			CombinedTypeSolver solver = new CombinedTypeSolver();
-			solver.add(new JavaParserTypeSolver(new File("/Users/uriel/Documents/Projetos/poup/poupweb/src")));
-			solver.add(new ReflectionTypeSolver());
-			ResolvedReferenceTypeDeclaration res = solver.solveType(exception);
-			return vf.bool(res.getAllAncestors().stream().anyMatch((a) -> a.getQualifiedName().equalsIgnoreCase("java.lang.Exception")));
-		}
-		return vf.bool(false);
-    }
-    
-    public static boolean isCheckedException(String exc) {
-//		String exception = DB.getInstance().findQualifiedName(exc);
+//    public IValue isCheckedException(IString exc) {
+//		String exception = DB.getInstance().findQualifiedName(exc.getValue());
 //		if(exception != null) {
-			CombinedTypeSolver solver = new CombinedTypeSolver();
-			solver.add(new JavaParserTypeSolver(new File("/Users/uriel/Documents/Projetos/mavenproject/src/main")));
-			solver.add(new ReflectionTypeSolver());
-			ResolvedReferenceTypeDeclaration res = solver.solveType("org.teste.mavenproject.App");
-			System.out.println(res.getQualifiedName());
+//			CombinedTypeSolver solver = new CombinedTypeSolver();
+//			solver.add(new JavaParserTypeSolver(new File("/Users/uriel/Documents/Projetos/poup/poupweb/src")));
+//			solver.add(new ReflectionTypeSolver());
+//			ResolvedReferenceTypeDeclaration res = solver.solveType(exception);
+//			return vf.bool(res.getAllAncestors().stream().anyMatch((a) -> a.getQualifiedName().equalsIgnoreCase("java.lang.Exception")));
 //		}
-		return false;
+//		return vf.bool(false);
+//    }
+//    
+    public IValue isRelated(IString clazzA, IString clazzB) {
+    	String qualifiedClazzA = DB.getInstance().findQualifiedName(clazzA.getValue().trim());
+    	String qualifiedClazzB = DB.getInstance().findQualifiedName(clazzB.getValue().trim());
+    	System.out.println(qualifiedClazzA);
+    	System.out.println(qualifiedClazzB);
+    	List<ClassDefinition> classAAncestors = DB.getInstance().getAllAncestors(qualifiedClazzA);
+    	List<ClassDefinition> classBAncestors = DB.getInstance().getAllAncestors(qualifiedClazzB);
+    	return vf.bool(classAAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzB)) || 
+    			classBAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzA)));
+
     }
     
-    public static boolean isSuperClass(String clazz, String superClazz) {
-    	String qualifiedClazz = DB.getInstance().findQualifiedName(clazz);
-    	String qualifiedSuperClazz = DB.getInstance().findQualifiedName(superClazz);
-    	List<ClassDefinition> allAncestors = DB.getInstance().getAllAncestors(qualifiedClazz);
-    	return allAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedSuperClazz));
+    public IValue getQualifiedName(IString clazz) {
+    	return vf.string(DB.getInstance().findQualifiedName(clazz.getValue().trim()));
+    }
+    
+    public static String getQualifiedName(String clazz) {
+    	return DB.getInstance().findQualifiedName("TesteException");
+    }
+
+    public static boolean isRelated(String clazzA, String clazzB) {
+    	String qualifiedClazzA = DB.getInstance().findQualifiedName(clazzA);
+    	String qualifiedClazzB = DB.getInstance().findQualifiedName(clazzB);
+    	System.out.println(qualifiedClazzA);
+    	System.out.println(qualifiedClazzB);
+    	List<ClassDefinition> classAAncestors = DB.getInstance().getAllAncestors(qualifiedClazzA);
+    	List<ClassDefinition> classBAncestors = DB.getInstance().getAllAncestors(qualifiedClazzB);
+    	return classAAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzB)) || 
+    			classBAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzA));
     }
 }

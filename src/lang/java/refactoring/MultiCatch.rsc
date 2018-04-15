@@ -40,9 +40,11 @@ private tuple[bool, Catches] computeMultiCatches(cs){
    	  case (CatchClause)`catch (<CatchType t> <VariableDeclaratorId vId>) <Block b>` :{
          if (b in mCatches){
             <ts, vId, blk> = mCatches[b];
-            ts += t;
-            mCatches[b] = <ts, vId, blk>;
-            app = true;
+            if(!areExceptionsRelated(ts, t)) {
+	            ts += t;
+	            mCatches[b] = <ts, vId, blk>;
+	            app = true;
+            }
          }
          else{
             mCatches[b] = <[t], vId, b>;
@@ -53,6 +55,16 @@ private tuple[bool, Catches] computeMultiCatches(cs){
       return <app, generateMultiCatches([mCatches[b] | b <- mCatches])>; 
    }
    return <false, cs>; // this return statement occurs when we find a try ... finally, without catch!
+}
+
+private bool areExceptionsRelated(list[CatchType] catchTypes, CatchType exc) {
+	bool related = false;
+    for(CatchType tp <- catchTypes) {
+    	if(isRelated(unparse(tp), unparse(exc))) {
+    		related = true;
+    	}
+    }
+    return related;
 }
 
 
@@ -94,3 +106,7 @@ bool notNestedTryCatch(Block b) {
   }
   return res;
 }
+
+ @javaClass{com.rascaljava.RascalJavaInterface}
+java bool isRelated(str clazzA, str clazzB);
+

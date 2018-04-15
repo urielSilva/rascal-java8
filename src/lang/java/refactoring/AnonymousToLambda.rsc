@@ -23,19 +23,16 @@ public tuple[int, CompilationUnit] refactorAnonymousInnerClass(CompilationUnit u
      case (Expression)`new <ClassOrInterfaceTypeToInstantiate id>() {<MethodModifier m> <Result res> <Identifier methodName> () { <BlockStatements stmt> } }` : 
      { check = checkConstraints(stmt, methodName, imports); 
        if(check == 0) {
-       println("aoo"); 
          total += 1;
          insert (Expression)`()-\> { <Statement stmt >}`;
        }
        else {
-       	println("erro: <check>");
           fails[check] = fails[check] + 1;
        }
      }
      case (Expression)`new <ClassOrInterfaceTypeToInstantiate id>() {<MethodModifier m> <Result res> <Identifier methodName> (<FormalParameter fp>) {<BlockStatements stmt>}}` : 
      {  check = checkConstraints(stmt, methodName, imports); 
      	if(check == 0) {
-     		println("aoo");
      	  total += 1;
           insert (Expression)`(<FormalParameter fp>)-\>{ <Statement stmt>}`;
         }
