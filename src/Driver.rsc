@@ -53,9 +53,9 @@ public void refactorProjects(loc input, bool verbose = true) {
        println("[Project Analyzer] project: " + projectDescriptor[0]);
        logMessage("[Project Analyzer] processing project: " + projectDescriptor[0]);
       
-       list[loc] projectFiles = findAllFiles(|file:///| + projectDescriptor[4] + "/src", "java");
+       list[loc] projectFiles = findAllFiles(|file:///| + projectDescriptor[4], "java");
        println("Downloading project JARs, this may take a while.");
-       int c = initDB(projectDescriptor[4]);
+       int c = initDB(projectDescriptor[4], projectDescriptor[5]);
        println("inseridos <c>");
        println("Processing " + projectDescriptor[0] + "...");
        switch(projectDescriptor[2]) {
@@ -99,7 +99,8 @@ public void executeTransformations(list[loc] files, int percent, bool verbose, t
        }
        acc += 1;
      }
-     catch : {
+     catch Exception() e: {
+     	println(e);
      	errors += 1; 
         println("  file processed with errors!");
      };
@@ -164,7 +165,7 @@ int numberOfTransformationsToApply(int total, int percent) {
 }
 
 @javaClass{com.rascaljava.RascalJavaInterface}
-java int initDB(str projectPath);
+java int initDB(str projectPath, str sourcePath);
 
 
 void logMessage(str message) {

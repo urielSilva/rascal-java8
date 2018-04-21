@@ -5,14 +5,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.body.ClassOrInterfaceDeclaration;
-import com.github.javaparser.ast.expr.AnnotationExpr;
-import com.github.javaparser.ast.type.ClassOrInterfaceType;
-import com.github.javaparser.resolution.declarations.ResolvedClassDeclaration;
 import com.github.javaparser.resolution.declarations.ResolvedReferenceTypeDeclaration;
 import com.github.javaparser.resolution.types.ResolvedReferenceType;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
@@ -31,10 +29,16 @@ public class CompilationUnitProcessor {
 	}
 
 	public void processCompilationUnit() {
-		ClassOrInterfaceDeclaration classDef = compilationUnit.findFirst(ClassOrInterfaceDeclaration.class).get();
-		if(classDef != null) {
-			processClass(solver.solveType(getPackage() + "." + classDef.getName()));
+		try {
+			Optional<ClassOrInterfaceDeclaration> classDef = compilationUnit.findFirst(ClassOrInterfaceDeclaration.class);
+			if(classDef.isPresent()) {
+				processClass(solver.solveType(getPackage() + "." + classDef.get().getName()));
+			}
+		} catch(RuntimeException e){
+			System.out.println(compilationUnit);
+			e.printStackTrace();
 		}
+		
 	}
 
 	
@@ -42,7 +46,7 @@ public class CompilationUnitProcessor {
 		if(dbConnection.findByQualifiedName(classDec.getQualifiedName()) == null) {
 			ClassDefinition classDef = processClassInformation(classDec);
 			classDef.setMethods(processMethodsInformation(classDec));
-			classDef.setFields(processFieldsInformation(classDec));
+//			classDef.setFields(processFieldsInformation(classDec));
 			dbConnection.saveToDb(classDef);
 			return classDef;
 		}

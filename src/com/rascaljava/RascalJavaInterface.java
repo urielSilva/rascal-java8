@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import com.github.javaparser.ast.CompilationUnit;
+import com.github.javaparser.ast.expr.NameExpr;
+import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
@@ -23,25 +25,27 @@ public class RascalJavaInterface {
        this.vf = vf;
     }
     
-    public IValue initDB(IString projectPath) {
+    public IValue initDB(IString projectPath, IString sourcePath) {
     	DB.getInstance().setup();
-    	populateDb(projectPath.getValue());
+    	populateDb(projectPath.getValue(), sourcePath.getValue());
     	return vf.integer(DB.getInstance().countInserted());
     }
     
-    public void initDB(String projectPath) {
+    public void initDB(String projectPath, String sourcePath) {
     	DB.getInstance().setup();
-    	populateDb(projectPath);
+    	populateDb(projectPath, sourcePath);
     	System.out.println(DB.getInstance().countInserted());
     }
     
-    public void populateDb(String projectPath) {
-		CombinedTypeSolver typeSolver = getTypeSolver(projectPath);
+    public void populateDb(String projectPath, String sourcePath) {
+		CombinedTypeSolver typeSolver = getTypeSolver(projectPath, sourcePath);
+		
+		JavaParserFacade.get(typeSolver).solve(new NameExpr("Exception"));
 		CompilationUnitProcessor processor = new CompilationUnitProcessor(typeSolver);
 		populateNativeExceptions(processor, typeSolver);
 		
 		
-		List<File> result = IOUtil.findAllFiles(projectPath + "/src/main", "java");
+		List<File> result = IOUtil.findAllFiles(projectPath + sourcePath, "java");
 		List<CompilationUnit> compiledFiles = result.stream().map(CompilationUnitProcessor::getCompilationUnit).collect(Collectors.toList());
 		compiledFiles.forEach((cu) -> { processor.setCompilationUnit(cu); processor.processCompilationUnit();});
     }
@@ -49,12 +53,13 @@ public class RascalJavaInterface {
     public void populateNativeExceptions(CompilationUnitProcessor processor, CombinedTypeSolver solver) {
     	processor.processClass(solver.solveType("java.io.IOException"));
     	processor.processClass(solver.solveType("java.lang.Exception"));
+    	processor.processClass(solver.solveType("java.lang.InterruptedException"));
     }
 
-	public static CombinedTypeSolver getTypeSolver(String projectPath) {
+	public static CombinedTypeSolver getTypeSolver(String projectPath, String sourcePath) {
 		CombinedTypeSolver solver;
 		solver = new CombinedTypeSolver();
-		solver.add(new JavaParserTypeSolver(new File(projectPath + "/src/main/java")));
+		solver.add(new JavaParserTypeSolver(new File(projectPath + sourcePath)));
 		solver.add(new ReflectionTypeSolver());
 		copyProjectJars(projectPath);
 		List<File> jars = IOUtil.findAllFiles(projectPath + "/dependencies", "jar");
@@ -82,9 +87,9 @@ public class RascalJavaInterface {
 	}
 
 	public static void main(String[] args) {
-		new RascalJavaInterface(null).initDB("/Users/uriel/Documents/Projetos/pessoal/sistemaTG");
+		new RascalJavaInterface(null).initDB("/Users/uriel/Documents/Projetos/pessoal/orientdb/core", "/src/main/java");
 		DB.getInstance().fetchFromDb();
-		System.out.println(isRelated("Exception", "IOException"));
+		System.out.println(isRelated("Exception", "InterruptedException"));
 	}
     
 //    public IValue isCheckedException(IString exc) {

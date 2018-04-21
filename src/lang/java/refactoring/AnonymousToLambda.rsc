@@ -1,3 +1,4 @@
+
 module lang::java::refactoring::AnonymousToLambda
 
 import lang::java::\syntax::Java18;
@@ -75,6 +76,3 @@ int checkConstraints(BlockStatements stmt, Identifier methodName, list[ImportCla
   };
   return res; 
 }
-
- @javaClass{com.rascaljava.RascalJavaInterface}
-java bool isCheckedException(str exc);

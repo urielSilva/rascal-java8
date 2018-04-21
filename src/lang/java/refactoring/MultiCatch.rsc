@@ -34,38 +34,45 @@ public tuple[int, CompilationUnit] refactorMultiCatch(CompilationUnit unit) {
  * occurences of MultiCatch. 
  */ 
 private tuple[bool, Catches] computeMultiCatches(cs){
-   map [Block, tuple[list[CatchType], VariableDeclaratorId, Block] ] mCatches = ();
+   map [Block key, tuple[list[CatchType], VariableDeclaratorId, Block] values] mCatches = ();
    app = false;
    top-down-break visit(cs) {
    	  case (CatchClause)`catch (<CatchType t> <VariableDeclaratorId vId>) <Block b>` :{
          if (b in mCatches){
             <ts, vId, blk> = mCatches[b];
-            if(!areExceptionsRelated(ts, t)) {
-	            ts += t;
-	            mCatches[b] = <ts, vId, blk>;
-	            app = true;
-            }
+            ts += t;
+            mCatches[b] = <ts, vId, blk>;
+            app = true;
          }
          else{
             mCatches[b] = <[t], vId, b>;
          }
       }
    }
-   if(app) {
+   if(app && !areExceptionsRelated(mCatches)) {
+	  
       return <app, generateMultiCatches([mCatches[b] | b <- mCatches])>; 
    }
    return <false, cs>; // this return statement occurs when we find a try ... finally, without catch!
 }
 
-private bool areExceptionsRelated(list[CatchType] catchTypes, CatchType exc) {
+private bool areExceptionsRelated(map [Block key, tuple[list[CatchType], VariableDeclaratorId, Block] values] mCatches) {
 	bool related = false;
-    for(CatchType tp <- catchTypes) {
-    	if(isRelated(unparse(tp), unparse(exc))) {
-    		related = true;
+	list[CatchType] types = ([] | it + e | list[CatchType] e <- ([  t[0] |  t <- mCatches.values ]));
+ 	for(CatchType t1 <- types) {
+ 		for(CatchType t2 <- types) {
+	    	if(t1 != t2 && isRelated(unparse(t1), unparse(t2))) {
+	    		println("<unparse(t1)> e <unparse(t2)>");
+	    		related = true;
+	    		break;
+	    	}
     	}
-    }
+    	if (related) break;
+ 	}
+    
     return related;
 }
+
 
 
 /*
