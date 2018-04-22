@@ -167,6 +167,9 @@ public class DB {
 	}
 
 	public String findQualifiedName(String className) {
+		if(className.contains(".")) {
+			return className;
+		}
 		PreparedStatement stmt;
 		try {
 			stmt = connection.prepareStatement(

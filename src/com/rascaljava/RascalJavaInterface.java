@@ -20,6 +20,8 @@ import io.usethesource.vallang.IValueFactory;
 
 public class RascalJavaInterface {
 	private final IValueFactory vf;
+	private CompilationUnitProcessor processor;
+	private CombinedTypeSolver solver;
 
     public RascalJavaInterface(IValueFactory vf) {
        this.vf = vf;
@@ -38,11 +40,10 @@ public class RascalJavaInterface {
     }
     
     public void populateDb(String projectPath, String sourcePath) {
-		CombinedTypeSolver typeSolver = getTypeSolver(projectPath, sourcePath);
+		initTypeSolver(projectPath, sourcePath);
 		
-		JavaParserFacade.get(typeSolver).solve(new NameExpr("Exception"));
-		CompilationUnitProcessor processor = new CompilationUnitProcessor(typeSolver);
-		populateNativeExceptions(processor, typeSolver);
+		processor = new CompilationUnitProcessor(solver);
+		populateNativeExceptions(processor);
 		
 		
 		List<File> result = IOUtil.findAllFiles(projectPath + sourcePath, "java");
@@ -50,14 +51,13 @@ public class RascalJavaInterface {
 		compiledFiles.forEach((cu) -> { processor.setCompilationUnit(cu); processor.processCompilationUnit();});
     }
     
-    public void populateNativeExceptions(CompilationUnitProcessor processor, CombinedTypeSolver solver) {
+    public void populateNativeExceptions(CompilationUnitProcessor processor) {
     	processor.processClass(solver.solveType("java.io.IOException"));
     	processor.processClass(solver.solveType("java.lang.Exception"));
     	processor.processClass(solver.solveType("java.lang.InterruptedException"));
     }
 
-	public static CombinedTypeSolver getTypeSolver(String projectPath, String sourcePath) {
-		CombinedTypeSolver solver;
+	public CombinedTypeSolver initTypeSolver(String projectPath, String sourcePath) {
 		solver = new CombinedTypeSolver();
 		solver.add(new JavaParserTypeSolver(new File(projectPath + sourcePath)));
 		solver.add(new ReflectionTypeSolver());
@@ -87,9 +87,10 @@ public class RascalJavaInterface {
 	}
 
 	public static void main(String[] args) {
-		new RascalJavaInterface(null).initDB("/Users/uriel/Documents/Projetos/pessoal/orientdb/core", "/src/main/java");
+		RascalJavaInterface rascalJavaInterface = new RascalJavaInterface(null);
+		rascalJavaInterface.initDB("/Users/uriel/Documents/Projetos/pessoal/orientdb/distributed", "/src/main/java");
 		DB.getInstance().fetchFromDb();
-		System.out.println(isRelated("Exception", "InterruptedException"));
+		System.out.println(rascalJavaInterface.isRelated("Exception", "com.orientechnologies.common.concur.ONeedRetryException"));
 	}
     
 //    public IValue isCheckedException(IString exc) {
@@ -105,15 +106,25 @@ public class RascalJavaInterface {
 //    }
 //    
     public IValue isRelated(IString clazzA, IString clazzB) {
-    	String qualifiedClazzA = DB.getInstance().findQualifiedName(clazzA.getValue().trim());
-    	String qualifiedClazzB = DB.getInstance().findQualifiedName(clazzB.getValue().trim());
-    	System.out.println(qualifiedClazzA);
-    	System.out.println(qualifiedClazzB);
-    	List<ClassDefinition> classAAncestors = DB.getInstance().getAllAncestors(qualifiedClazzA);
-    	List<ClassDefinition> classBAncestors = DB.getInstance().getAllAncestors(qualifiedClazzB);
-    	return vf.bool(classAAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzB)) || 
-    			classBAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzA)));
-
+    	try {
+    		String qualifiedClazzA = DB.getInstance().findQualifiedName(clazzA.getValue());
+        	String qualifiedClazzB = DB.getInstance().findQualifiedName(clazzB.getValue());
+        	List<ClassDefinition> classAAncestors = DB.getInstance().getAllAncestors(qualifiedClazzA);
+        	List<ClassDefinition> classBAncestors = DB.getInstance().getAllAncestors(qualifiedClazzB);
+        	if(classAAncestors.isEmpty()) {
+        		processor.processClass(solver.solveType(qualifiedClazzA));
+        		classAAncestors = DB.getInstance().getAllAncestors(qualifiedClazzA);
+        	}
+        	if(classBAncestors.isEmpty()) {
+        		processor.processClass(solver.solveType(qualifiedClazzB));
+        		classBAncestors = DB.getInstance().getAllAncestors(qualifiedClazzB);
+        	}
+        	return vf.bool(classAAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzB)) || 
+        			classBAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzA)));
+    	} catch(Exception e) {
+    		e.printStackTrace();
+    	}
+    	return vf.bool(false);
     }
     
     public IValue getQualifiedName(IString clazz) {
@@ -124,13 +135,19 @@ public class RascalJavaInterface {
     	return DB.getInstance().findQualifiedName("TesteException");
     }
 
-    public static boolean isRelated(String clazzA, String clazzB) {
+    public boolean isRelated(String clazzA, String clazzB) {
     	String qualifiedClazzA = DB.getInstance().findQualifiedName(clazzA);
     	String qualifiedClazzB = DB.getInstance().findQualifiedName(clazzB);
-    	System.out.println(qualifiedClazzA);
-    	System.out.println(qualifiedClazzB);
     	List<ClassDefinition> classAAncestors = DB.getInstance().getAllAncestors(qualifiedClazzA);
     	List<ClassDefinition> classBAncestors = DB.getInstance().getAllAncestors(qualifiedClazzB);
+    	if(classAAncestors.isEmpty()) {
+    		processor.processClass(solver.solveType(qualifiedClazzA));
+    		classAAncestors = DB.getInstance().getAllAncestors(qualifiedClazzA);
+    	}
+    	if(classBAncestors.isEmpty()) {
+    		processor.processClass(solver.solveType(qualifiedClazzB));
+    		classBAncestors = DB.getInstance().getAllAncestors(qualifiedClazzB);
+    	}
     	return classAAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzB)) || 
     			classBAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzA));
     }

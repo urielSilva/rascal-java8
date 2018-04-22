@@ -6,6 +6,7 @@ import Map;
 import Type; 
 import List;
 import Set;
+import String;
 
 import lang::java::\syntax::Java18;
 
@@ -20,7 +21,7 @@ public tuple[int, CompilationUnit] refactorMultiCatch(CompilationUnit unit) {
   int numberOfOccurences = 0;  
   CompilationUnit cu = visit(unit) {
    case (TryStatement)`try <Block b1> <Catches c1>` : { 
-     <app, mc> = computeMultiCatches(c1);
+     <app, mc> = computeMultiCatches(unit, c1);
      if(app) numberOfOccurences += 1;
      insert (TryStatement)`try <Block b1> <Catches mc>`;
    }
@@ -33,7 +34,7 @@ public tuple[int, CompilationUnit] refactorMultiCatch(CompilationUnit unit) {
  * this function calculates the possible 
  * occurences of MultiCatch. 
  */ 
-private tuple[bool, Catches] computeMultiCatches(cs){
+private tuple[bool, Catches] computeMultiCatches(CompilationUnit unit, cs){
    map [Block key, tuple[list[CatchType], VariableDeclaratorId, Block] values] mCatches = ();
    app = false;
    top-down-break visit(cs) {
@@ -49,20 +50,33 @@ private tuple[bool, Catches] computeMultiCatches(cs){
          }
       }
    }
-   if(app && !areExceptionsRelated(mCatches)) {
+   if(app && !areExceptionsRelated(unit, mCatches)) {
 	  
       return <app, generateMultiCatches([mCatches[b] | b <- mCatches])>; 
    }
    return <false, cs>; // this return statement occurs when we find a try ... finally, without catch!
 }
 
-private bool areExceptionsRelated(map [Block key, tuple[list[CatchType], VariableDeclaratorId, Block] values] mCatches) {
+private bool areExceptionsRelated(CompilationUnit unit, map [Block key, tuple[list[CatchType], VariableDeclaratorId, Block] values] mCatches) {
 	bool related = false;
 	list[CatchType] types = ([] | it + e | list[CatchType] e <- ([  t[0] |  t <- mCatches.values ]));
- 	for(CatchType t1 <- types) {
- 		for(CatchType t2 <- types) {
-	    	if(t1 != t2 && isRelated(unparse(t1), unparse(t2))) {
-	    		println("<unparse(t1)> e <unparse(t2)>");
+	list[str] typesStr = [  trim(unparse(t)) |  t <- types ];
+	list[str] qualifiedTypes = [];
+	top-down-break visit(unit) {
+   	  case (SingleTypeImportDeclaration)`import <TypeName t>;` :{
+         list[str] qualifiedType = split(".", unparse(t));
+         if(last(qualifiedType) in typesStr) {
+	         qualifiedTypes += [intercalate(".", qualifiedType)];
+         }
+      }
+   }
+   if("Exception" in typesStr) {
+   	qualifiedTypes += ["Exception"];
+   }
+ 	for(str t1 <- qualifiedTypes) {
+ 		for(str t2 <- qualifiedTypes) {
+	    	if(t1 != t2 && isRelated(t1, t2)) {
+	    		println("<t1> e <t2> related");
 	    		related = true;
 	    		break;
 	    	}
