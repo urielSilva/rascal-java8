@@ -53,6 +53,12 @@ public tuple[int, CompilationUnit] refactorDiamond(CompilationUnit unit) {
         insert((LocalVariableDeclaration)`<Identifier idt><TypeArguments tas> <VariableDeclaratorId vdId>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>)`);
       }
     }    
+    case (Assignment)`<LeftHandSide lhs> = new <{AnnotatedType "."}* aType><TypeArguments args>(<ArgumentList? al>)` : {
+      if(args !:= (TypeArguments)`\<\>`){
+        numberOfOccurences += 1;
+        insert((Assignment)`<LeftHandSide lhs>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>)`);
+      }
+    }    
   };
   return <numberOfOccurences, cu>;
 }
