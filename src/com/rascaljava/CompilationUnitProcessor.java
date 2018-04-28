@@ -30,10 +30,11 @@ public class CompilationUnitProcessor {
 
 	public void processCompilationUnit() {
 		try {
-			Optional<ClassOrInterfaceDeclaration> classDef = compilationUnit.findFirst(ClassOrInterfaceDeclaration.class);
-			if(classDef.isPresent()) {
-				processClass(solver.solveType(getPackage() + "." + classDef.get().getName()));
+			List<ClassOrInterfaceDeclaration> classDefs = compilationUnit.findAll(ClassOrInterfaceDeclaration.class);
+			for(ClassOrInterfaceDeclaration def : classDefs) {
+				processClass(solver.solveType(getPackage() + "." + def.getName()));
 			}
+			
 		} catch(RuntimeException e){
 			System.out.println(compilationUnit);
 			e.printStackTrace();
@@ -100,7 +101,7 @@ public class CompilationUnitProcessor {
 	public static CompilationUnit getCompilationUnit(File file) {
 		try {
 			return JavaParser.parse(new FileInputStream(file));
-		} catch (FileNotFoundException e) {
+		} catch (Exception e) {
 			e.printStackTrace();
 			return null;
 		}

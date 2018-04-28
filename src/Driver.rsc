@@ -29,6 +29,7 @@ import lang::java::analysis::ExceptionFinder;
 import lang::java::util::ManageCompilationUnit;
 import lang::java::m3::M3Util;
 import lang::java::\syntax::Java18;
+import lang::java::analysis::RascalJavaInterface;
 
 import util::PrettyPrinter;
 
@@ -100,6 +101,7 @@ public void executeTransformations(list[loc] files, int percent, bool verbose, t
        acc += 1;
      }
      catch Exception() e: {
+     println(contents);
      	println(e);
      	errors += 1; 
         println("  file processed with errors!");
@@ -163,10 +165,6 @@ int numberOfTransformationsToApply(int total, int percent) {
    }
    return res;
 }
-
-@javaClass{com.rascaljava.RascalJavaInterface}
-java int initDB(str projectPath, str sourcePath);
-
 
 void logMessage(str message) {
   loc out = |project://rascal-Java8/output/|;

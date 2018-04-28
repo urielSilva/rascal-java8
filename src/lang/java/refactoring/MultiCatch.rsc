@@ -9,9 +9,10 @@ import Set;
 import String;
 
 import lang::java::\syntax::Java18;
-
+import lang::java::analysis::Imports;
 import lang::java::analysis::ClassTable;
 import lang::java::analysis::GraphDependency;
+import lang::java::analysis::RascalJavaInterface;
 
 /**
  * Refactor a try-catch statement to use the 
@@ -40,26 +41,26 @@ private tuple[bool, Catches] computeMultiCatches(CompilationUnit unit, cs){
    top-down-break visit(cs) {
    	  case (CatchClause)`catch (<CatchType t> <VariableDeclaratorId vId>) <Block b>` :{
          if (b in mCatches){
-            <ts, vId, blk> = mCatches[b];
-            ts += t;
-            mCatches[b] = <ts, vId, blk>;
-            app = true;
+         	<ts, vId, blk> = mCatches[b];
+         	if(!areExceptionsRelated(unit,ts, t)) {
+	            ts += t;
+	            mCatches[b] = <ts, vId, blk>;
+	            app = true;
+         	}
          }
          else{
             mCatches[b] = <[t], vId, b>;
          }
       }
    }
-   if(app && !areExceptionsRelated(unit, mCatches)) {
-	  
+   if(app) {
       return <app, generateMultiCatches([mCatches[b] | b <- mCatches])>; 
    }
    return <false, cs>; // this return statement occurs when we find a try ... finally, without catch!
 }
 
-private bool areExceptionsRelated(CompilationUnit unit, map [Block key, tuple[list[CatchType], VariableDeclaratorId, Block] values] mCatches) {
+private bool areExceptionsRelated(CompilationUnit unit, list[CatchType] types, CatchType t) {
 	bool related = false;
-	list[CatchType] types = ([] | it + e | list[CatchType] e <- ([  t[0] |  t <- mCatches.values ]));
 	list[str] typesStr = [  trim(unparse(t)) |  t <- types ];
 	list[str] qualifiedTypes = [];
 	top-down-break visit(unit) {
@@ -69,19 +70,14 @@ private bool areExceptionsRelated(CompilationUnit unit, map [Block key, tuple[li
 	         qualifiedTypes += [intercalate(".", qualifiedType)];
          }
       }
-   }
-   if("Exception" in typesStr) {
-   	qualifiedTypes += ["Exception"];
-   }
- 	for(str t1 <- qualifiedTypes) {
- 		for(str t2 <- qualifiedTypes) {
-	    	if(t1 != t2 && isRelated(t1, t2)) {
-	    		println("<t1> e <t2> related");
-	    		related = true;
-	    		break;
-	    	}
-    	}
-    	if (related) break;
+   	}
+   
+ 	for(str tp <- qualifiedTypes) {
+ 		println("<tp> e <t>");
+		if(isRelated(tp, t)) {
+			related = true;
+			break;
+		}
  	}
     
     return related;
@@ -106,7 +102,8 @@ private Catches generateMultiCatches([<ts, vId, b>]) = {
 private Catches generateMultiCatches([<ts, vId, b>, C*]) = {
   catches = generateMultiCatches(C);
   types = parse(#CatchType, intercalate("| ", ts));
-  return (Catches)`catch(<CatchType types><VariableDeclaratorId vId>) <Block b> <CatchClause+ catches>`;
+  clause = parse(#CatchClause, "catch(<types> <vId>) <b>");
+  return (Catches)`<CatchClause+ catches> <CatchClause clause>`;
 };
 
 bool isSuperClassOf(t, ts) {
@@ -127,7 +124,3 @@ bool notNestedTryCatch(Block b) {
   }
   return res;
 }
-
- @javaClass{com.rascaljava.RascalJavaInterface}
-java bool isRelated(str clazzA, str clazzB);
-

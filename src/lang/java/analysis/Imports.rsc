@@ -26,3 +26,16 @@ list[ImportClause] listOfImports(CompilationUnit unit) {
    }
   return res;
 }
+
+str findQualifiedName(CompilationUnit unit, str className) {
+	top-down-break visit(unit) {
+   	  case (SingleTypeImportDeclaration)`import <TypeName t>;` :{
+         list[str] qualifiedName = split(".", unparse(t));
+         if(last(qualifiedName) == className) {
+	         return intercalate(".", qualifiedType);
+         }
+      }
+   	}
+   	return className;
+}
+

@@ -4,8 +4,12 @@ module lang::java::refactoring::AnonymousToLambda
 import lang::java::\syntax::Java18;
 import lang::java::analysis::Imports;
 
+
+
 import ParseTree; 
 import IO;
+import String;
+import lang::java::analysis::RascalJavaInterface;
 
 void findAnonymousInnerClass(CompilationUnit unit) {
    visit(unit) {
@@ -22,7 +26,7 @@ public tuple[int, CompilationUnit] refactorAnonymousInnerClass(CompilationUnit u
    list[int] fails = [0, 0, 0, 0, 0, 0];
    CompilationUnit res = visit(unit) {
      case (Expression)`new <ClassOrInterfaceTypeToInstantiate id>() {<MethodModifier m> <Result res> <Identifier methodName> () { <BlockStatements stmt> } }` : 
-     { check = checkConstraints(stmt, methodName, imports); 
+     { check = checkConstraints(unit, stmt, methodName, imports); 
        if(check == 0) {
          total += 1;
          insert (Expression)`()-\> { <Statement stmt >}`;
@@ -32,13 +36,12 @@ public tuple[int, CompilationUnit] refactorAnonymousInnerClass(CompilationUnit u
        }
      }
      case (Expression)`new <ClassOrInterfaceTypeToInstantiate id>() {<MethodModifier m> <Result res> <Identifier methodName> (<FormalParameter fp>) {<BlockStatements stmt>}}` : 
-     {  check = checkConstraints(stmt, methodName, imports); 
+     {  check = checkConstraints(unit, stmt, methodName, imports); 
      	if(check == 0) {
      	  total += 1;
           insert (Expression)`(<FormalParameter fp>)-\>{ <Statement stmt>}`;
         }
         else {
-        	println("erro: <check>");
            fails[check] = fails[check] + 1;
         }   
      }
@@ -58,18 +61,18 @@ public tuple[int, CompilationUnit] refactorAnonymousInnerClass(CompilationUnit u
  */
  
  
-int checkConstraints(BlockStatements stmt, Identifier methodName, list[ImportClause] imports)  {
+int checkConstraints(CompilationUnit unit, BlockStatements stmt, Identifier methodName, list[ImportClause] imports)  {
   res = 0; 
-  println(methodName);
   visit(stmt) { 
     case (Expression)`this` : {println("calls this"); res = 1;}
     case (FieldAccess)`super.<Identifier id>` : {println("access super field"); res = 2;}
     case (MethodInvocation)`super.<TypeArguments args><Identifier id>(<ArgumentList args>)` : {println("invokes super method");res = 3;}
     case (MethodInvocation)`methodName(<ArgumentList args>)` : {println("recursive call");res = 4;}
-    case (MethodInvocation)`methodName()` : {println("recursive call");res = 4;}  
+    case (MethodInvocation)`methodName()` : {println("recursive call");res = 4;}
     case (ThrowStatement)`throw new <ClassOrInterfaceTypeToInstantiate e>();` : 
-    { 
-    	if(isCheckedException(unparse(e))) {
+    { 	
+    	str qualifiedName = findQualifiedName(unit, trim(unparse(e)));
+    	if(qualifiedName == "Exception" || !isRelated(qualifiedName, "RuntimeException")) {
     		println("throws checked exception in  annonymous " + e); res = 5;
     	}
     }
