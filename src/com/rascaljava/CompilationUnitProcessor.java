@@ -47,7 +47,7 @@ public class CompilationUnitProcessor {
 		if(dbConnection.findByQualifiedName(classDec.getQualifiedName()) == null) {
 			ClassDefinition classDef = processClassInformation(classDec);
 			classDef.setMethods(processMethodsInformation(classDec));
-//			classDef.setFields(processFieldsInformation(classDec));
+			classDef.setFields(processFieldsInformation(classDec));
 			dbConnection.saveToDb(classDef);
 			return classDef;
 		}
@@ -58,21 +58,22 @@ public class CompilationUnitProcessor {
 		ClassDefinition classDef = new ClassDefinition();
 		classDef.setQualifiedName(clazz.getQualifiedName());
 		classDef.setClass(clazz.isClass());
-		ResolvedReferenceType superClass = clazz
+		List<ResolvedReferenceType> superClasses = clazz
 				.getAncestors()
 				.stream()
-				.filter((c) -> c.getTypeDeclaration().isClass())
-				.findFirst().orElse(null);
+				.collect(Collectors.toList());
 		
-		if(superClass != null) {
-			ClassDefinition superClassDef = dbConnection.findByQualifiedName(superClass.getQualifiedName());
-			if(superClassDef != null) {
-				classDef.setSuperClass(superClassDef);
-			} else {
-				classDef.setSuperClass(processClass(superClass.getTypeDeclaration()));
+		for(ResolvedReferenceType superClass : superClasses) {
+			if(superClass != null) {
+				ClassDefinition superClassDef = dbConnection.findByQualifiedName(superClass.getQualifiedName());
+				if(superClassDef != null) {
+					classDef.addSuperclass(superClassDef);
+				} else {
+					classDef.addSuperclass(processClass(superClass.getTypeDeclaration()));
+				}
 			}
-			
 		}
+		
 		return classDef;
 	}
 
@@ -91,7 +92,7 @@ public class CompilationUnitProcessor {
 	}
 	
 	public List<FieldDefinition> processFieldsInformation(ResolvedReferenceTypeDeclaration clazz) {
-		return clazz.getAllFields().stream().map((f) -> new FieldDefinition(f.getName(), f.getType().toString())).collect(Collectors.toList());
+		return clazz.getAllFields().stream().map((f) -> new FieldDefinition(f.getName(), f.getType().describe())).collect(Collectors.toList());
 	}
 
 	public String getPackage() {

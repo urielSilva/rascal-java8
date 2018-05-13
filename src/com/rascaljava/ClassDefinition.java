@@ -11,8 +11,7 @@ public class ClassDefinition {
 	private Integer id;
 	private String qualifiedName;
 	
-	private ClassDefinition superClass;
-	private List<String> implementedTypes = new ArrayList<>();
+	private List<ClassDefinition> superClasses = new ArrayList<>();
 	private List<String> annotations = new ArrayList<>();
 	private boolean isClass;
 	
@@ -47,20 +46,16 @@ public class ClassDefinition {
 		this.qualifiedName = qualifiedName;
 	}
 
-	public ClassDefinition getSuperClass() {
-		return superClass;
+	public List<ClassDefinition> getSuperClasses() {
+		return superClasses;
 	}
 
-	public void setSuperClass(ClassDefinition superClass) {
-		this.superClass = superClass;
+	public void setSuperClasses(List<ClassDefinition> superClasses) {
+		this.superClasses = superClasses;
 	}
-
-	public List<String> getImplementedTypes() {
-		return implementedTypes;
-	}
-
-	public void setImplementedTypes(List<String> implementedTypes) {
-		this.implementedTypes = implementedTypes;
+	
+	public void addSuperclass(ClassDefinition superClass) {
+		this.superClasses.add(superClass);
 	}
 
 	public List<MethodDefinition> getMethods() {

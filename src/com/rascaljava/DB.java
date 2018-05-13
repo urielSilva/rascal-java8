@@ -35,8 +35,25 @@ public class DB {
 			PreparedStatement stmt = connection.prepareStatement(
 				"CREATE TABLE CLASS_DEFINITION" +
 				"(class_id int NOT NULL PRIMARY KEY AUTO_INCREMENT, qualified_name VARCHAR(255), method_id int, " +
-				"superclass_id int, is_class tinyint(1), CONSTRAINT fk_superclass FOREIGN KEY (superclass_id) REFERENCES CLASS_DEFINITION(class_id))"
+				"is_class tinyint(1))"
 			);
+			stmt.execute();
+			stmt = connection.prepareStatement(
+					"CREATE TABLE `INHERITANCE` (" + 
+					"  `class_id` INT NOT NULL," + 
+					"  `superclass_id` INT NOT NULL," + 
+					"  PRIMARY KEY (`class_id`, `superclass_id`)," + 
+					"  CONSTRAINT `fk_inheritance_class_id`" + 
+					"    FOREIGN KEY (`class_id`)" + 
+					"    REFERENCES `CLASS_DEFINITION` (`class_id`)," + 
+					"  CONSTRAINT `fk_inheritance_superclass_id`" + 
+					"    FOREIGN KEY (`superclass_id`)" + 
+					"    REFERENCES `CLASS_DEFINITION` (`class_id`)" + 
+					"    )"
+				);
+			
+			
+
 			stmt.execute();
 			stmt = connection.prepareStatement(
 				"CREATE TABLE METHOD_DEFINITION" +
@@ -63,13 +80,7 @@ public class DB {
 	    try {
 	    	int class_id = 0;
 	    	PreparedStatement stmt;
-	    	saveClass(classDef);
-			stmt = connection.prepareStatement("SELECT * FROM CLASS_DEFINITION ORDER BY class_id DESC LIMIT 1 ");
-			ResultSet rs = stmt.executeQuery();
-			if (rs.next()) {
-				class_id = rs.getInt(1);
-				classDef.setId(class_id);
-			}
+	    	class_id = saveClass(classDef);
 //			essa parte foi comentada para melhorar o tempo de execucao
 			
 //			for(MethodDefinition m : classDef.getMethods()) {
@@ -86,48 +97,55 @@ public class DB {
 //				}
 //			}
 //			
-////			for(FieldDefinition f : classDef.getFields()) {
-////				stmt = connection.prepareStatement("INSERT INTO FIELD_DEFINITION (name, type, class_id) values(?, ?, ?)");
-////				stmt.setString(1, f.getName());
-////				stmt.setString(2, f.getType());
-////				stmt.setInt(3, class_id);
-////				stmt.executeUpdate();
-////			}
-			
-			stmt.close();
+			for(FieldDefinition f : classDef.getFields()) {
+				stmt = connection.prepareStatement("INSERT INTO FIELD_DEFINITION (name, type, class_id) values(?, ?, ?)");
+				stmt.setString(1, f.getName());
+				stmt.setString(2, f.getType());
+				stmt.setInt(3, class_id);
+				stmt.executeUpdate();
+			}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
 	    return classDef;
 	}
 
-	public void saveClass(ClassDefinition classDef) {
+	public int saveClass(ClassDefinition classDef) {
+		int class_id = 0;
 		try {
 			PreparedStatement stmt;
-			ClassDefinition superClass = getSuperClassFromClassDef(classDef);
-			if(superClass != null) {
-				stmt = connection.prepareStatement("INSERT INTO CLASS_DEFINITION (qualified_name, superclass_id, is_class) values(?,?,?)");
-				stmt.setString(1, classDef.getQualifiedName());
-				stmt.setInt(2, superClass.getId());
-				stmt.setInt(3, classDef.isClass() ? 1 : 0);
-			} else {
-				stmt = connection.prepareStatement("INSERT INTO CLASS_DEFINITION (qualified_name, is_class) values(?,?)");
-				stmt.setString(1, classDef.getQualifiedName());
-				stmt.setInt(2, classDef.isClass() ? 1 : 0);
+			stmt = connection.prepareStatement("INSERT INTO CLASS_DEFINITION (qualified_name, is_class) values(?,?)");
+			stmt.setString(1, classDef.getQualifiedName());
+			stmt.setInt(2, classDef.isClass() ? 1 : 0);
+			stmt.executeUpdate();
+			stmt = connection.prepareStatement("SELECT * FROM CLASS_DEFINITION ORDER BY class_id DESC LIMIT 1 ");
+			ResultSet rs = stmt.executeQuery();
+			if (rs.next()) {
+				class_id = rs.getInt(1);
+				classDef.setId(class_id);
 			}
-;			stmt.executeUpdate();
+			for(ClassDefinition superClassDef : classDef.getSuperClasses()) {
+				ClassDefinition superClass = loadSuperClass(superClassDef);
+				if(superClass != null) {
+					stmt = connection.prepareStatement("INSERT INTO INHERITANCE (class_id, superclass_id) values(?,?)");
+					stmt.setInt(1, class_id);
+					stmt.setInt(2, superClassDef.getId());
+					stmt.executeUpdate();
+				}
+			}
 		} catch(SQLException e) {
 			e.printStackTrace();
 		}
+		return class_id;
 	}
 	
-	public ClassDefinition getSuperClassFromClassDef(ClassDefinition classDef) {
-		if(classDef.getSuperClass() == null) {
+	public ClassDefinition loadSuperClass(ClassDefinition superClass) {
+		if(superClass == null) {
 			return null;
-		} else if(classDef.getSuperClass().getId() == null) {
-			return findByQualifiedName(classDef.getSuperClass().getQualifiedName());
+		} else if(superClass.getId() == null) {
+			return findByQualifiedName(superClass.getQualifiedName());
 		} else {
-			return classDef.getSuperClass();
+			return superClass;
 		}
 	}
 	
@@ -155,11 +173,33 @@ public class DB {
 
 	public void fetchFromDb() {
 		Map<String, Integer> names = new HashMap<>();
+		List<ClassDefinition> list = new ArrayList<>();
 		try {
-			PreparedStatement stmt = connection.prepareStatement("SELECT class_id, qualified_name, superclass_id FROM CLASS_DEFINITION");
+			int classId;
+			PreparedStatement stmt = connection.prepareStatement("SELECT class_id, qualified_name FROM CLASS_DEFINITION");
 			ResultSet rs = stmt.executeQuery();
 			while (rs.next()) {
-				System.out.println("id: " + rs.getInt("class_id") + " nome: " + rs.getString("qualified_name") + " superclass_id: " + rs.getInt("superclass_id"));
+				ClassDefinition def = new ClassDefinition();
+				def.setId(rs.getInt("class_id"));
+				def.setQualifiedName(rs.getString("qualified_name"));
+				list.add(def);
+			}
+			for(ClassDefinition def : list) {
+				System.out.println("id:" + def.getId() + "nome: " + def.getQualifiedName());
+				System.out.println("SUPERCLASSES");
+
+				stmt = connection.prepareStatement("SELECT superclass_id FROM INHERITANCE where class_id = ?");
+				stmt.setInt(1, def.getId());
+				rs = stmt.executeQuery();
+				while(rs.next()) {
+					PreparedStatement stmt2 = connection.prepareStatement("SELECT class_id, qualified_name, is_class FROM CLASS_DEFINITION where class_id = ?");
+					stmt2.setInt(1, rs.getInt("superclass_id"));
+					ResultSet rs2 = stmt2.executeQuery();
+					while(rs2.next()) {
+						System.out.println("SUPERCLASSE id: " + rs2.getInt("class_id") + " qualified_name: " + rs2.getString("qualified_name") + "is_class:" + 
+							(rs2.getInt("is_class") == 1 ? "classe" : "interface"));
+					}
+				}
 			}
 		} catch (Exception e) {
 			e.printStackTrace();
