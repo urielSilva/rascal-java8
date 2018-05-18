@@ -70,7 +70,6 @@ public tuple[MethodBody body, int occurrences] refactorEnhancedForStatementsInMe
 	occurrences = 0;
 	
 	MethodBody refactoredMethodBody = methodBody; 
-	
 	top-down visit(methodBody) {
 		case EnhancedForStatement enhancedForStmt: 
 			visit(enhancedForStmt) {
@@ -88,7 +87,7 @@ public tuple[MethodBody body, int occurrences] refactorEnhancedForStatementsInMe
 						alreadyComputedAvailableVars = true;
 					}
 									
-					if(isLoopRefactorable(availableVars, collectionId, loopBody)) {
+					if(isLoopRefactorable(unit, availableVars, collectionId, loopBody)) {
 					
 						try {
 							refactoredMethodBody = refactorEnhancedToFunctional(availableVars, enhancedForStmt, methodBody, iteratedVarName, collectionId);
@@ -103,7 +102,8 @@ public tuple[MethodBody body, int occurrences] refactorEnhancedForStatementsInMe
 								println(refactoredMethodBody);
 								println();
 							}
-						} catch: {
+						} catch Exception() e: {
+							println(e);
 							// ignore. continuing
 							// 'continue' do not works as expected in 'visit' statements
 							;	
@@ -120,9 +120,11 @@ public tuple[MethodBody body, int occurrences] refactorEnhancedForStatementsInMe
 	return <refactoredMethodBody, occurrences>;
 }
 
-private bool isLoopRefactorable(set[MethodVar] availableVariables, Expression collectionId, Statement loopBody) {
-	return loopBodyPassConditions(loopBody) && isIteratingOnCollection(collectionId, availableVariables) &&
+private bool isLoopRefactorable(CompilationUnit unit, set[MethodVar] availableVariables, Expression collectionId, Statement loopBody) {
+	return loopBodyPassConditions(loopBody) && isIteratingOnCollection(unit, collectionId, availableVariables) &&
 		atMostOneReferenceToNonEffectiveFinalVar(availableVariables, loopBody);
+	
+		
 }
 
 // TODO extract module and test it

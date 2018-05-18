@@ -3,12 +3,13 @@ package com.rascaljava;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.Arrays;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import com.github.javaparser.ast.CompilationUnit;
-import com.github.javaparser.ast.expr.NameExpr;
-import com.github.javaparser.symbolsolver.javaparsermodel.JavaParserFacade;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
@@ -27,93 +28,108 @@ public class RascalJavaInterface {
        this.vf = vf;
     }
     
-    public IValue initDB(IString projectPath, IString sourcePath) {
-    	DB.getInstance().setup();
-    	populateDb(projectPath.getValue(), sourcePath.getValue());
-    	return vf.integer(DB.getInstance().countInserted());
+    public IValue initDB(IString projectPath) {
+    	return vf.integer(initDB(projectPath.getValue()));
     }
     
-    public void initDB(String projectPath, String sourcePath) {
+    public Integer initDB(String projectPath) {
     	DB.getInstance().setup();
-    	populateDb(projectPath, sourcePath);
-    	System.out.println(DB.getInstance().countInserted());
+    	populateDb(projectPath);
+    	return DB.getInstance().countInserted();
     }
     
-    public void populateDb(String projectPath, String sourcePath) {
-		initTypeSolver(projectPath, sourcePath);
-		
+    public void populateDb(String projectPath) {
+		initTypeSolver(projectPath);
 		processor = new CompilationUnitProcessor(solver);
-		populateNativeExceptions(processor);
-		
-		
 		List<File> result = IOUtil.findAllFiles(projectPath, "java");
 		List<CompilationUnit> compiledFiles = result.stream().map(CompilationUnitProcessor::getCompilationUnit).collect(Collectors.toList());
-		compiledFiles.forEach((cu) -> { processor.setCompilationUnit(cu); processor.processCompilationUnit();});
+		compiledFiles.forEach((cUnit) -> processor.processCompilationUnit(cUnit));
     }
     
-    public void populateNativeExceptions(CompilationUnitProcessor processor) {
-    	processor.processClass(solver.solveType("java.io.IOException"));
-    	processor.processClass(solver.solveType("java.lang.Exception"));
-    	processor.processClass(solver.solveType("java.lang.RuntimeException"));
-    	processor.processClass(solver.solveType("java.lang.InterruptedException"));
-    }
-
-	public CombinedTypeSolver initTypeSolver(String projectPath, String sourcePath) {
+	public CombinedTypeSolver initTypeSolver(String projectPath) {
 		solver = new CombinedTypeSolver();
 		solver.add(new JavaParserTypeSolver(new File(projectPath)));
 		solver.add(new ReflectionTypeSolver());
-		copyProjectJars(projectPath);
-		List<File> jars = IOUtil.findAllFiles(projectPath + "/dependencies", "jar");
-		jars.forEach((jar) -> {
-			try {
-				solver.add(new JarTypeSolver(jar.getAbsolutePath()));
-			} catch (IOException e) {
-				e.printStackTrace();
-			}
-		});
+		String rootPath = copyProjectJars(projectPath);
+		if(rootPath != null) {
+			List<File> jars = IOUtil.findAllFiles(rootPath + "/dependencies", "jar");
+			jars.forEach((jar) -> {
+				try {
+					solver.add(new JarTypeSolver(jar.getAbsolutePath()));
+				} catch (IOException e) {
+					e.printStackTrace();
+				}
+			});	
+		}
 		return solver;
 	}
 
-	public static void copyProjectJars(String projectPath) {
+	public String copyProjectJars(String projectPath) {
 		System.out.println("Starting JARs download. at " + new Timestamp(System.currentTimeMillis()));
     	try {
-    		ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mvn","dependency:copy-dependencies", "-DoutputDirectory=dependencies", "-DoverWriteSnapshots=true", "-DoverWriteReleases=false");
-    		pb.directory(new File(projectPath));
-    		Process pr = pb.start();
-			pr.waitFor();
-			System.out.println("JARs downloaded successfully at "  + new Timestamp(System.currentTimeMillis()));
+    		File pomFolder = findPomFolder(projectPath, 4);
+    		if(pomFolder != null) {
+    			ProcessBuilder pb = new ProcessBuilder("/usr/local/bin/mvn","dependency:copy-dependencies", "-DoutputDirectory=dependencies", "-DoverWriteSnapshots=true", "-DoverWriteReleases=false");
+        		pb.directory(pomFolder);
+        		Process pr = pb.start();
+    			pr.waitFor();
+    			System.out.println("JARs downloaded successfully at "  + new Timestamp(System.currentTimeMillis()));
+    			return pomFolder.getAbsolutePath();
+    		}
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+    	return null;
+	}
+	
+	public File findPomFolder(String projectPath, int levelsToSearch) {
+		File path = new File(projectPath);
+		List<File> files = Arrays.asList(path.getParentFile().listFiles());
+		for(File f : files) {
+			if(f.getName().contains("pom.xml")) {
+				return path.getParentFile();
+			}
+		}
+		if(levelsToSearch == 0) {
+			return null;
+		} else {
+			return findPomFolder(path.getParentFile().getAbsolutePath(), levelsToSearch - 1);
+		}
+		
 	}
 
 	public static void main(String[] args) {
 		RascalJavaInterface rascalJavaInterface = new RascalJavaInterface(null);
-		rascalJavaInterface.initDB("/Users/uriel/Documents/Projetos/pessoal/TesteRascal/src", "/src/main/java");
+		rascalJavaInterface.initDB("/Users/uriel/Documents/Projetos/pessoal/testeRascal/src");
 		DB.getInstance().fetchFromDb();
-		System.out.println(rascalJavaInterface.isRelated("RuntimeException", "RuntimeException"));
+		System.out.println(rascalJavaInterface.isCollection("main.java.TesteForEach2Funcional", "list"));
 	}
-    
-    public IValue isRelated(IString clazzA, IString clazzB) {
-    	try {
-    		String qualifiedClazzA = DB.getInstance().findQualifiedName(clazzA.getValue());
-        	String qualifiedClazzB = DB.getInstance().findQualifiedName(clazzB.getValue());
-        	List<ClassDefinition> classAAncestors = DB.getInstance().getAllAncestors(qualifiedClazzA);
-        	List<ClassDefinition> classBAncestors = DB.getInstance().getAllAncestors(qualifiedClazzB);
-        	if(classAAncestors.isEmpty()) {
-        		processor.processClass(solver.solveType(qualifiedClazzA));
-        		classAAncestors = DB.getInstance().getAllAncestors(qualifiedClazzA);
-        	}
-        	if(classBAncestors.isEmpty()) {
-        		processor.processClass(solver.solveType(qualifiedClazzB));
-        		classBAncestors = DB.getInstance().getAllAncestors(qualifiedClazzB);
-        	}
-        	return vf.bool(classAAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzB)) || 
-        			classBAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzA)));
-    	} catch(Exception e) {
-    		e.printStackTrace();
-    	}
-    	return vf.bool(false);
+	
+	public IValue isCollection(IString className, IString fieldName) {
+		return vf.bool(isCollection(className.getValue(), fieldName.getValue()));
+		
+	}
+	
+	public boolean isCollection(String className, String fieldName) {
+		String fieldType = getFieldType(className, fieldName);
+		if(fieldType.endsWith("[]")) {
+			return false; 
+		} else {
+			return isRelated(fieldType, "java.util.Collection");
+		}
+	}
+	
+	public String getFieldType(String className, String fieldName) {
+		FieldDefinition field = DB.getInstance().getField(className, fieldName);
+		Matcher regexMatcher = Pattern.compile("(.*?)<.*>").matcher(field.getType());
+		if(regexMatcher.find()) {
+			return regexMatcher.group(1);
+		} else {
+			return field.getType();
+		}
+	}
+	public IValue isRelated(IString clazzA, IString clazzB) {
+    	return vf.bool(isRelated(clazzA.getValue(), clazzB.getValue()));
     }
     
     public IValue getQualifiedName(IString clazz) {

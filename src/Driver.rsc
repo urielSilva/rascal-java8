@@ -56,7 +56,7 @@ public void refactorProjects(loc input, bool verbose = true) {
       
        list[loc] projectFiles = findAllFiles(|file:///| + projectDescriptor[4], "java");
        println("Downloading project JARs, this may take a while.");
-       int c = initDB(projectDescriptor[4], projectDescriptor[5]);
+       int c = initDB(projectDescriptor[4]);
        println("inseridos <c>");
        println("Processing " + projectDescriptor[0] + "...");
        switch(projectDescriptor[2]) {

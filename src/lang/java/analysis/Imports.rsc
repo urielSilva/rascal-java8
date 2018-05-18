@@ -1,6 +1,8 @@
 module lang::java::analysis::Imports
 
 import ParseTree;
+import IO;
+import String;
 import lang::java::\syntax::Java18;
 
 /*
@@ -37,5 +39,14 @@ str findQualifiedName(CompilationUnit unit, str className) {
       }
    	}
    	return className;
+}
+
+str getPackage(CompilationUnit unit) {
+	top-down-break visit(unit) {
+		case (PackageDeclaration)`package <{Identifier "."}+ ids>;` : { 
+		        return unparse(ids); 
+		}
+	}
+	
 }
 

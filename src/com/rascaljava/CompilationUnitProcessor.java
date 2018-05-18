@@ -17,8 +17,6 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSol
 
 public class CompilationUnitProcessor {
 
-	private CompilationUnit compilationUnit;
-	
 	private DB dbConnection;
 	
 	private CombinedTypeSolver solver;
@@ -28,11 +26,11 @@ public class CompilationUnitProcessor {
 		this.solver =  solver;
 	}
 
-	public void processCompilationUnit() {
+	public void processCompilationUnit(CompilationUnit compilationUnit) {
 		try {
 			List<ClassOrInterfaceDeclaration> classDefs = compilationUnit.findAll(ClassOrInterfaceDeclaration.class);
 			for(ClassOrInterfaceDeclaration def : classDefs) {
-				processClass(solver.solveType(getPackage() + "." + def.getName()));
+				processClass(solver.solveType(getPackage(compilationUnit) + "." + def.getName()));
 			}
 			
 		} catch(RuntimeException e){
@@ -95,7 +93,7 @@ public class CompilationUnitProcessor {
 		return clazz.getAllFields().stream().map((f) -> new FieldDefinition(f.getName(), f.getType().describe())).collect(Collectors.toList());
 	}
 
-	public String getPackage() {
+	public String getPackage(CompilationUnit compilationUnit) {
 		return compilationUnit.getPackageDeclaration().get().getNameAsString();
 	}
 
@@ -106,13 +104,5 @@ public class CompilationUnitProcessor {
 			e.printStackTrace();
 			return null;
 		}
-	}
-
-	public CompilationUnit getCompilationUnit() {
-		return compilationUnit;
-	}
-
-	public void setCompilationUnit(CompilationUnit compilationUnit) {
-		this.compilationUnit = compilationUnit;
 	}
 }

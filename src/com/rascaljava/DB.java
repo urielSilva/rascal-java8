@@ -12,6 +12,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import io.usethesource.vallang.IString;
+
 public class DB {
 	
 	private Connection connection;
@@ -32,48 +34,60 @@ public class DB {
 			Class.forName("org.h2.Driver");
 			connection = DriverManager.
 			        getConnection("jdbc:h2:mem:test;DB_CLOSE_DELAY=-1", "", "");
-			PreparedStatement stmt = connection.prepareStatement(
-				"CREATE TABLE CLASS_DEFINITION" +
-				"(class_id int NOT NULL PRIMARY KEY AUTO_INCREMENT, qualified_name VARCHAR(255), method_id int, " +
-				"is_class tinyint(1))"
-			);
-			stmt.execute();
-			stmt = connection.prepareStatement(
-					"CREATE TABLE `INHERITANCE` (" + 
-					"  `class_id` INT NOT NULL," + 
-					"  `superclass_id` INT NOT NULL," + 
-					"  PRIMARY KEY (`class_id`, `superclass_id`)," + 
-					"  CONSTRAINT `fk_inheritance_class_id`" + 
-					"    FOREIGN KEY (`class_id`)" + 
-					"    REFERENCES `CLASS_DEFINITION` (`class_id`)," + 
-					"  CONSTRAINT `fk_inheritance_superclass_id`" + 
-					"    FOREIGN KEY (`superclass_id`)" + 
-					"    REFERENCES `CLASS_DEFINITION` (`class_id`)" + 
-					"    )"
-				);
-			
-			
-
-			stmt.execute();
-			stmt = connection.prepareStatement(
-				"CREATE TABLE METHOD_DEFINITION" +
-				"(method_id int NOT NULL PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), return_type VARCHAR(255), " +
-				"class_id int,  CONSTRAINT fk_methodclass FOREIGN KEY (class_id) REFERENCES CLASS_DEFINITION(class_id))"
-			);
-			stmt.execute();
-			
-			stmt = connection.prepareStatement("ALTER TABLE CLASS_DEFINITION ADD CONSTRAINT fk_exception_method FOREIGN KEY (method_id) REFERENCES METHOD_DEFINITION(method_id)"); 
-			stmt.execute();
-			stmt = connection.prepareStatement(
-				"CREATE TABLE FIELD_DEFINITION" +
-				"(field_id int NOT NULL PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), type VARCHAR(255)," +
-				"class_id int, constraint fk_fieldclass FOREIGN KEY (class_id) REFERENCES CLASS_DEFINITION(class_id))"
-			);
-			stmt.execute();
-			stmt.close();
+			createClassTable();
+			createInheritanceTable();
+			createMethodTable();
+			createFieldtable();
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
+	}
+
+	private void createFieldtable() throws SQLException {
+		PreparedStatement stmt;
+		stmt = connection.prepareStatement(
+			"CREATE TABLE FIELD_DEFINITION" +
+			"(field_id int NOT NULL PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), type VARCHAR(255)," +
+			"class_id int, constraint fk_fieldclass FOREIGN KEY (class_id) REFERENCES CLASS_DEFINITION(class_id))"
+		);
+		stmt.execute();
+	}
+
+	private void createMethodTable() throws SQLException {
+		PreparedStatement stmt;
+		stmt = connection.prepareStatement(
+			"CREATE TABLE METHOD_DEFINITION" +
+			"(method_id int NOT NULL PRIMARY KEY AUTO_INCREMENT, name VARCHAR(255), return_type VARCHAR(255), " +
+			"class_id int,  CONSTRAINT fk_methodclass FOREIGN KEY (class_id) REFERENCES CLASS_DEFINITION(class_id))"
+		);
+		stmt.execute();
+	}
+
+	private void createInheritanceTable() throws SQLException {
+		PreparedStatement stmt;
+		stmt = connection.prepareStatement(
+				"CREATE TABLE `INHERITANCE` (" + 
+				"  `class_id` INT NOT NULL," + 
+				"  `superclass_id` INT NOT NULL," + 
+				"  PRIMARY KEY (`class_id`, `superclass_id`)," + 
+				"  CONSTRAINT `fk_inheritance_class_id`" + 
+				"    FOREIGN KEY (`class_id`)" + 
+				"    REFERENCES `CLASS_DEFINITION` (`class_id`)," + 
+				"  CONSTRAINT `fk_inheritance_superclass_id`" + 
+				"    FOREIGN KEY (`superclass_id`)" + 
+				"    REFERENCES `CLASS_DEFINITION` (`class_id`)" + 
+				"    )"
+			);
+		stmt.execute();
+	}
+
+	private void createClassTable() throws SQLException {
+		PreparedStatement stmt = connection.prepareStatement(
+			"CREATE TABLE CLASS_DEFINITION" +
+			"(class_id int NOT NULL PRIMARY KEY AUTO_INCREMENT, qualified_name VARCHAR(255), method_id int, " +
+			"is_class tinyint(1))"
+		);
+		stmt.execute();
 	}
 	
 	public ClassDefinition saveToDb(ClassDefinition classDef) {
@@ -81,22 +95,7 @@ public class DB {
 	    	int class_id = 0;
 	    	PreparedStatement stmt;
 	    	class_id = saveClass(classDef);
-//			essa parte foi comentada para melhorar o tempo de execucao
-			
-//			for(MethodDefinition m : classDef.getMethods()) {
-//				stmt = connection.prepareStatement("INSERT INTO METHOD_DEFINITION (name, return_type, class_id) values(?, ?, ?)");
-//				stmt.setString(1, m.getName());
-//				stmt.setString(2, m.getReturnType());
-//				stmt.setInt(3, class_id);
-//				stmt.executeUpdate();
-//				
-//				stmt = connection.prepareStatement("SELECT * FROM METHOD_DEFINITION ORDER BY method_id DESC LIMIT 1 ");
-//				rs = stmt.executeQuery();
-//				if (rs.next()) {
-//					method_id = rs.getInt(1);
-//				}
-//			}
-//			
+	    	
 			for(FieldDefinition f : classDef.getFields()) {
 				stmt = connection.prepareStatement("INSERT INTO FIELD_DEFINITION (name, type, class_id) values(?, ?, ?)");
 				stmt.setString(1, f.getName());
@@ -185,9 +184,6 @@ public class DB {
 				list.add(def);
 			}
 			for(ClassDefinition def : list) {
-				System.out.println("id:" + def.getId() + "nome: " + def.getQualifiedName());
-				System.out.println("SUPERCLASSES");
-
 				stmt = connection.prepareStatement("SELECT superclass_id FROM INHERITANCE where class_id = ?");
 				stmt.setInt(1, def.getId());
 				rs = stmt.executeQuery();
@@ -238,25 +234,37 @@ public class DB {
 	public List<ClassDefinition> getAllAncestors(String qualifiedName) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("SELECT a.* from CLASS_DEFINITION a ");
-		sb.append("INNER JOIN CLASS_DEFINITION b on a.class_id = b.superclass_id ");
-		sb.append("WHERE b.qualified_name = ?");
+		sb.append("INNER JOIN INHERITANCE b on a.class_id = b.superclass_id ");
+		sb.append("INNER JOIN CLASS_DEFINITION c on c.class_id = b.class_id ");
+		sb.append("WHERE c.qualified_name = ?");
 		try {
 			PreparedStatement stmt = connection.prepareStatement(sb.toString());
 			stmt.setString(1, qualifiedName);
 			ResultSet rs = stmt.executeQuery();
+			List<ClassDefinition> ancestors = new ArrayList<>();
+			List<ClassDefinition> list = new ArrayList<>();
+			boolean goOn = true;
 			while(rs.next()) {
-				List<ClassDefinition> list = new ArrayList<>();
+				
 				ClassDefinition classDef = new ClassDefinition();
 				classDef.setId(rs.getInt("class_id"));
 				classDef.setQualifiedName(rs.getString("qualified_name"));
 				classDef.setClass(rs.getInt("is_class") != 0 ? true : false);
 				list.add(classDef);
+				ancestors.add(classDef);
 				if(classDef.getQualifiedName().equals("java.lang.Object")) {
-					return list;
-				} else {
-					return Stream.concat(list.stream(), getAllAncestors(classDef.getQualifiedName()).stream()).collect(Collectors.toList());
-				}
+					goOn = false;
+				} 
 			}
+			if(goOn) {
+				 for(ClassDefinition ancestor : list) {
+					 ancestors.addAll(getAllAncestors(ancestor.getQualifiedName()));
+				 }
+				return ancestors;
+			} else {
+				return ancestors;
+			}
+			
 		} catch(SQLException e) {
 			e.printStackTrace();
 		}
@@ -275,6 +283,23 @@ public class DB {
 			e.printStackTrace();
 		}
 		return 0;
+	}
+
+	public FieldDefinition getField(String className, String fieldName) {
+		try {
+			ClassDefinition classDef = findByQualifiedName(className);
+			PreparedStatement stmt = connection.prepareStatement("SELECT * from FIELD_DEFINITION where name = ? and class_id = ?");
+			stmt.setString(1, fieldName);
+			stmt.setInt(2, classDef.getId());
+			ResultSet rs = stmt.executeQuery();
+			if (rs.next()) {
+				FieldDefinition fieldDef = new FieldDefinition(rs.getString("name"), rs.getString("type"));
+				return fieldDef;
+			}
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+		return null;
 	}
 	
 }
