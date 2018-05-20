@@ -1,5 +1,5 @@
 
-module lang::java::refactoring::AnonymousToLambda
+module lang::java::refactoring::evolution::AnonymousToLambda
 
 import lang::java::\syntax::Java18;
 import lang::java::analysis::Imports;

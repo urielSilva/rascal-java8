@@ -1,4 +1,4 @@
-module lang::java::refactoring::Diamond 
+module lang::java::refactoring::evolution::Diamond 
 
 import lang::java::\syntax::Java18;
 import ParseTree; 

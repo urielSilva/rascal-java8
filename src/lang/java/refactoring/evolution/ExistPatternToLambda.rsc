@@ -1,4 +1,4 @@
-module lang::java::refactoring::ExistPatternToLambda
+module lang::java::refactoring::evolution::ExistPatternToLambda
 
 import ParseTree;
 import lang::java::\syntax::Java18;

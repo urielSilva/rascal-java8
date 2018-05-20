@@ -1,4 +1,4 @@
-module lang::java::refactoring::FilterPattern
+module lang::java::refactoring::evolution::FilterPattern
 
 import ParseTree;
 import lang::java::\syntax::Java18;

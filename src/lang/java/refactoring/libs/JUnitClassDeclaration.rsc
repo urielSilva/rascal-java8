@@ -1,4 +1,4 @@
-module lang::java::refactoring::JUnitClassDeclaration
+module lang::java::refactoring::libs::JUnitClassDeclaration
 
 import ParseTree;
 import lang::java::\syntax::Java18;

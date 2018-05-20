@@ -4,7 +4,8 @@ import Set;
 import String;
 
 // TODO Review if using a Set is the best choice. Probably not.
-public data MethodVar = methodVar(bool isFinal, str name, str varType, bool isParameter, bool isDeclaredWithinLoop, bool isEffectiveFinal);
+public data MethodVar = methodVar(bool isFinal, str name, str varType,
+	bool isParameter, bool isDeclaredWithinLoop, bool isEffectiveFinal, bool isClassField);
 
 public bool isArray(MethodVar methodVar) {
 	return methodVar.varType == "array";

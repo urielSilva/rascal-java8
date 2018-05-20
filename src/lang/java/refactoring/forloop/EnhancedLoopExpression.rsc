@@ -46,7 +46,11 @@ private bool isIdentifierACollection(CompilationUnit unit, Expression exp, set[M
 	varName = replaceFirst(varName, "this.", "");
 	className = findCurrentClassName(unit);
 	var = findByName(availableVariables, varName);
-	return isCollection(className, var.name);
+	if(var.isClassField) {
+		return isCollection(className, var.name);
+	} else {
+		return !isTypePlainArray(var) && !isIterable(var);
+	}
 }
 
 // FIXME

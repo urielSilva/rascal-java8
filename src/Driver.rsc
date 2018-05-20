@@ -11,16 +11,16 @@ import util::Benchmark;
 
 import io::IOUtil; 
 
-import lang::java::refactoring::MultiCatch;
-import lang::java::refactoring::SwitchString;
-import lang::java::refactoring::VarArgs; 
-import lang::java::refactoring::Diamond;
-import lang::java::refactoring::AnonymousToLambda;
-import lang::java::refactoring::ExistPatternToLambda;
-import lang::java::refactoring::FilterPattern;
+import lang::java::refactoring::evolution::MultiCatch;
+import lang::java::refactoring::evolution::SwitchString;
+import lang::java::refactoring::evolution::VarArgs; 
+import lang::java::refactoring::evolution::Diamond;
+import lang::java::refactoring::evolution::AnonymousToLambda;
+import lang::java::refactoring::evolution::ExistPatternToLambda;
+import lang::java::refactoring::evolution::FilterPattern;
 import lang::java::refactoring::IntegerSumPattern;
-import lang::java::refactoring::JUnitClassDeclaration;
-import lang::java::refactoring::JUnitTestCaseDeclaration;
+import lang::java::refactoring::libs::JUnitClassDeclaration;
+import lang::java::refactoring::libs::JUnitTestCaseDeclaration;
 
 
 import lang::java::refactoring::forloop::EnhancedForLoopRefactorer;

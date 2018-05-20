@@ -1,4 +1,4 @@
-module lang::java::refactoring::MultiCatch
+module lang::java::refactoring::evolution::MultiCatch
 
 import ParseTree; 
 import IO;

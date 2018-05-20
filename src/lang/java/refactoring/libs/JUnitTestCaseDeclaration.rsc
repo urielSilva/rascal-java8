@@ -1,4 +1,4 @@
-module lang::java::refactoring::JUnitTestCaseDeclaration
+module lang::java::refactoring::libs::JUnitTestCaseDeclaration
 
 import ParseTree;
 import lang::java::\syntax::Java18;

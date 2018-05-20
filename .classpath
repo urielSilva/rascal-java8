@@ -1,7 +1,25 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins"/>
+	<classpathentry kind="con" path="org.eclipse.pde.core.requiredPlugins">
+		<accessrules>
+			<accessrule kind="accessible" pattern="**/**"/>
+		</accessrules>
+	</classpathentry>
 	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="lib" path="/Users/uriel/Downloads/mysql-connector-java-5.1.45/mysql-connector-java-5.1.45-bin.jar"/>
+	<classpathentry kind="lib" path="/Users/uriel/Downloads/mongodb-driver-3.6.0.jar"/>
+	<classpathentry kind="lib" path="/Users/uriel/Documents/Projetos/pessoal/h2-1.4.196.jar"/>
+	<classpathentry kind="lib" path="/Users/uriel/Documents/Projetos/mavenproject/dependencies/junit-3.8.1.jar"/>
+	<classpathentry kind="lib" path="lib/animal-sniffer-annotations-1.14.jar"/>
+	<classpathentry kind="lib" path="lib/error_prone_annotations-2.0.18.jar"/>
+	<classpathentry kind="lib" path="lib/guava-23.4-jre.jar"/>
+	<classpathentry kind="lib" path="lib/j2objc-annotations-1.1.jar"/>
+	<classpathentry kind="lib" path="lib/java-symbol-solver-core-0.6.3.jar" sourcepath="/Users/uriel/.m2/repository/com/github/javaparser/java-symbol-solver-core/0.6.3/java-symbol-solver-core-0.6.3-sources.jar"/>
+	<classpathentry kind="lib" path="lib/java-symbol-solver-logic-0.6.3.jar"/>
+	<classpathentry kind="lib" path="lib/java-symbol-solver-model-0.6.3.jar"/>
+	<classpathentry kind="lib" path="lib/javaparser-core-3.5.5.jar" sourcepath="/Users/uriel/.m2/repository/com/github/javaparser/javaparser-core/3.5.5/javaparser-core-3.5.5-sources.jar"/>
+	<classpathentry kind="lib" path="lib/javassist-3.22.0-GA.jar"/>
+	<classpathentry kind="lib" path="lib/jsr305-1.3.9.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
