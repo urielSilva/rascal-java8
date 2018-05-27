@@ -21,6 +21,7 @@ import lang::java::refactoring::evolution::FilterPattern;
 import lang::java::refactoring::IntegerSumPattern;
 import lang::java::refactoring::libs::JUnitClassDeclaration;
 import lang::java::refactoring::libs::JUnitTestCaseDeclaration;
+import lang::java::refactoring::idioms::MethodReference;
 
 
 import lang::java::refactoring::forloop::EnhancedForLoopRefactorer;
@@ -70,6 +71,7 @@ public void refactorProjects(loc input, bool verbose = true) {
           case /IS/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorIntegerSumPattern, "integer list sum pattern");
           case /JUCD/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorJUnitClassDeclaration, "JUnit class declaration");
           case /JUTD/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorJUnitTestCaseDeclaration, "JUnit class declaration");
+          case /MR/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorMethodReference, "Method Reference");
           case /FUNC/: {
           	  checkedExceptionClasses = findCheckedExceptions(projectFiles);
               executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorForLoopToFunctional, "ForLoopToFunctional");
