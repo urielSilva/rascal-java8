@@ -42,11 +42,10 @@ private tuple[bool, Catches] computeMultiCatches(CompilationUnit unit, cs){
    	  case (CatchClause)`catch (<CatchType t> <VariableDeclaratorId vId>) <Block b>` :{
          if (b in mCatches){
          	<ts, vId, blk> = mCatches[b];
-         	if(!areExceptionsRelated(unit,ts, t)) {
+         	
 	            ts += t;
 	            mCatches[b] = <ts, vId, blk>;
 	            app = true;
-         	}
          }
          else{
             mCatches[b] = <[t], vId, b>;

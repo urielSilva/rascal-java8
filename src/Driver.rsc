@@ -8,7 +8,7 @@ import Set;
 import ParseTree; 
 import util::Math;
 import util::Benchmark;
-
+import Exception;
 import io::IOUtil; 
 
 import lang::java::refactoring::evolution::MultiCatch;
@@ -54,11 +54,11 @@ public void refactorProjects(loc input, bool verbose = true) {
        list[str] projectDescriptor = split(",", p);
        println("[Project Analyzer] project: " + projectDescriptor[0]);
        logMessage("[Project Analyzer] processing project: " + projectDescriptor[0]);
-      
+		println(projectDescriptor);      
        list[loc] projectFiles = findAllFiles(|file:///| + projectDescriptor[4], "java");
        println("Downloading project JARs, this may take a while.");
-       int c = initDB(projectDescriptor[4]);
-       println("inseridos <c>");
+       //int c = initDB(projectDescriptor[4]);
+       //println("inseridos <c>");
        println("Processing " + projectDescriptor[0] + "...");
        switch(projectDescriptor[2]) {
           case /MC/: executeTransformations(projectFiles, toInt(projectDescriptor[3]), verbose, refactorMultiCatch, "multicatch");
@@ -91,7 +91,7 @@ public void executeTransformations(list[loc] files, int percent, bool verbose, t
   int acc = 0;
   for(file <- files) {
      contents = readFile(file);
-     
+     println(file);
      try {
        unit = parse(#CompilationUnit, contents);
        tuple[int, CompilationUnit] res = transformation(unit);
@@ -101,12 +101,13 @@ public void executeTransformations(list[loc] files, int percent, bool verbose, t
          println("  " + toString(acc) + " of " + toString((size(files))) + " processed succesfully!");
        }
        acc += 1;
-     }
-     catch Exception() e: {
-     println(contents);
+     } catch Error(e): {
      	println(e);
      	errors += 1; 
         println("  file processed with errors!");
+     } catch ParseError(e): {
+     	//println(e);
+     	errors += 1; 
      };
      //if(acc == 200) break;
   }

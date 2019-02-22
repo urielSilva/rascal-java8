@@ -34,7 +34,7 @@ public class CompilationUnitProcessor {
 			}
 			
 		} catch(RuntimeException e){
-			System.out.println(compilationUnit);
+//			System.out.println(compilationUnit);
 			e.printStackTrace();
 		}
 		
@@ -101,6 +101,7 @@ public class CompilationUnitProcessor {
 		try {
 			return JavaParser.parse(new FileInputStream(file));
 		} catch (Exception e) {
+			System.out.println("erro no arquivo: " + file.getPath());
 			e.printStackTrace();
 			return null;
 		}

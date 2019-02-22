@@ -50,7 +50,10 @@ public tuple[int, CompilationUnit] refactorMethodReference(CompilationUnit cu) {
       	  				}
      				}
       	  		}
-      	  		insert (MethodInvocation) `<ExpressionName listName>.<Identifier methodName>(<ArgumentList refactoredArgs>)`;
+      	  		if(refactoredArgs != methodArgs) {
+      	  			insert (MethodInvocation) `<ExpressionName listName>.<Identifier methodName>(<ArgumentList refactoredArgs>)`;
+      	  		}
+      	  		
      		}
      		
      		case(MethodInvocation)`<Primary primary>.<Identifier methodName>(<ArgumentList? methodArgs>)` : {
@@ -76,10 +79,15 @@ public tuple[int, CompilationUnit] refactorMethodReference(CompilationUnit cu) {
       	  				}
      				}
       	  		}
-      	  		insert (MethodInvocation) `<Primary primary>.<Identifier methodName>(<ArgumentList refactoredArgs>)`;
+      	  		if(refactoredArgs != methodArgs) {
+      	  			insert (MethodInvocation) `<ExpressionName listName>.<Identifier methodName>(<ArgumentList refactoredArgs>)`;
+      	  		}
      		}
   	  	}
-      	 insert(MethodDeclaration) `<MethodModifier* mds> <MethodHeader methodHeader> <MethodBody refactoredBody>`;
+  	  	 if(refactoredBody != mBody) {
+  		   insert(MethodDeclaration) `<MethodModifier* mds> <MethodHeader methodHeader> <MethodBody refactoredBody>`;
+  		 }
+      	 
      	}
    };
    return <total, refactoredUnit>;

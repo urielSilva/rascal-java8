@@ -21,18 +21,18 @@ public tuple[int, CompilationUnit] refactorDiamond(CompilationUnit unit) {
     //  numberOfOccurences += 1;  
     //  insert((FieldDeclaration)`<Identifier idt><TypeArguments tas> <VariableDeclaratorId vdId>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>);`);
     //}  
-    case (FieldDeclaration)`<FieldModifier fm> <Identifier idt><TypeArguments tas><VariableDeclaratorId vdId> = new <{AnnotatedType "."}* aType><TypeArguments args>(<ArgumentList? al>);` : {
-      if(args !:= (TypeArguments)`\<\>`){
-        numberOfOccurences += 1;
-        insert((FieldDeclaration)`<FieldModifier fm> <Identifier idt><TypeArguments tas> <VariableDeclaratorId vdId>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>);`);
-      }
-    }
-    case (FieldDeclaration)`<Identifier idt><TypeArguments tas><VariableDeclaratorId vdId> = new <{AnnotatedType "."}* aType><TypeArguments args>(<ArgumentList? al>);` : {
-      if(args !:= (TypeArguments)`\<\>`){
-        numberOfOccurences += 1;
-        insert((FieldDeclaration)`<Identifier idt><TypeArguments tas> <VariableDeclaratorId vdId>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>);`);
-      }
-    }    
+    //case (FieldDeclaration)`<FieldModifier fm> <Identifier idt><TypeArguments tas><VariableDeclaratorId vdId> = new <{AnnotatedType "."}* aType><TypeArguments args>(<ArgumentList? al>);` : {
+    //  if(args !:= (TypeArguments)`\<\>`){
+    //    numberOfOccurences += 1;
+    //    insert((FieldDeclaration)`<FieldModifier fm> <Identifier idt><TypeArguments tas> <VariableDeclaratorId vdId>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>);`);
+    //  }
+    //}
+    //case (FieldDeclaration)`<Identifier idt><TypeArguments tas><VariableDeclaratorId vdId> = new <{AnnotatedType "."}* aType><TypeArguments args>(<ArgumentList? al>);` : {
+    //  if(args !:= (TypeArguments)`\<\>`){
+    //    numberOfOccurences += 1;
+    //    insert((FieldDeclaration)`<Identifier idt><TypeArguments tas> <VariableDeclaratorId vdId>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>);`);
+    //  }
+    //}    
     //case (LocalVariableDeclaration)`<VariableModifier vm> <Identifier idt><TypeArguments tas><VariableDeclaratorId vdId> = new <{AnnotatedType "."}* aType>(<ArgumentList? al>)` : {
     //  numberOfOccurences += 1;  
     //  insert((LocalVariableDeclaration)`<VariableModifier vm> <Identifier idt><TypeArguments tas> <VariableDeclaratorId vdId>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>)`);
@@ -41,18 +41,18 @@ public tuple[int, CompilationUnit] refactorDiamond(CompilationUnit unit) {
     //  numberOfOccurences += 1;  
     //  insert((LocalVariableDeclaration)`<Identifier idt><TypeArguments tas> <VariableDeclaratorId vdId>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>)`);
     //}    
-    case (LocalVariableDeclaration)      `<VariableModifier vm> <Identifier idt><TypeArguments tas><VariableDeclaratorId vdId> = new <{AnnotatedType "."}* aType><TypeArguments args>(<ArgumentList? al>)` : {
-       if(args !:= (TypeArguments)`\<\>`){
-        numberOfOccurences += 1;
-        insert((LocalVariableDeclaration)`<VariableModifier vm> <Identifier idt><TypeArguments tas> <VariableDeclaratorId vdId>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>)`);
-      }
-    }
-    case (LocalVariableDeclaration)`<Identifier idt><TypeArguments tas><VariableDeclaratorId vdId> = new <{AnnotatedType "."}* aType><TypeArguments args>(<ArgumentList? al>)` : {
-      if(args !:= (TypeArguments)`\<\>`){
-        numberOfOccurences += 1;
-        insert((LocalVariableDeclaration)`<Identifier idt><TypeArguments tas> <VariableDeclaratorId vdId>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>)`);
-      }
-    }    
+    //case (LocalVariableDeclaration)      `<VariableModifier vm> <Identifier idt><TypeArguments tas><VariableDeclaratorId vdId> = new <{AnnotatedType "."}* aType><TypeArguments args>(<ArgumentList? al>)` : {
+    //   if(args !:= (TypeArguments)`\<\>`){
+    //    numberOfOccurences += 1;
+    //    insert((LocalVariableDeclaration)`<VariableModifier vm> <Identifier idt><TypeArguments tas> <VariableDeclaratorId vdId>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>)`);
+    //  }
+    //}
+    //case (LocalVariableDeclaration)`<Identifier idt><TypeArguments tas><VariableDeclaratorId vdId> = new <{AnnotatedType "."}* aType><TypeArguments args>(<ArgumentList? al>)` : {
+    //  if(args !:= (TypeArguments)`\<\>`){
+    //    numberOfOccurences += 1;
+    //    insert((LocalVariableDeclaration)`<Identifier idt><TypeArguments tas> <VariableDeclaratorId vdId>= new <{AnnotatedType "."}* aType>\<\>(<ArgumentList? al>)`);
+    //  }
+    //}    
     case (Assignment)`<LeftHandSide lhs> = new <{AnnotatedType "."}* aType><TypeArguments args>(<ArgumentList? al>)` : {
       if(args !:= (TypeArguments)`\<\>`){
         numberOfOccurences += 1;

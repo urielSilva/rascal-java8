@@ -71,6 +71,7 @@ int checkConstraints(CompilationUnit unit, BlockStatements stmt, Identifier meth
     case (MethodInvocation)`methodName()` : {println("recursive call");res = 4;}
     case (ThrowStatement)`throw new <ClassOrInterfaceTypeToInstantiate e>();` : 
     { 	
+    	println("throws in anonymous");
     	str qualifiedName = findQualifiedName(unit, trim(unparse(e)));
     	if(qualifiedName == "Exception" || !isRelated(qualifiedName, "RuntimeException")) {
     		println("throws checked exception in  annonymous " + e); res = 5;

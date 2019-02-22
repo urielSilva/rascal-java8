@@ -264,7 +264,6 @@ public class DB {
 			} else {
 				return ancestors;
 			}
-			
 		} catch(SQLException e) {
 			e.printStackTrace();
 		}

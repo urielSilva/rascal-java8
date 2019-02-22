@@ -3,7 +3,10 @@ package com.rascaljava;
 import java.io.File;
 import java.io.IOException;
 import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -14,12 +17,22 @@ import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSol
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JarTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
+import com.sun.istack.internal.logging.Logger;
 
 import io.usethesource.vallang.IString;
 import io.usethesource.vallang.IValue;
 import io.usethesource.vallang.IValueFactory;
 
+ interface Teste {
+	public String ao() throws Exception;
+}
+
 public class RascalJavaInterface {
+	public IValue initDB(IString projectPath) {
+    	return vf.integer(initDB(projectPath.getValue()));
+    }
+	
+	
 	private final IValueFactory vf;
 	private CompilationUnitProcessor processor;
 	private CombinedTypeSolver solver;
@@ -28,9 +41,7 @@ public class RascalJavaInterface {
        this.vf = vf;
     }
     
-    public IValue initDB(IString projectPath) {
-    	return vf.integer(initDB(projectPath.getValue()));
-    }
+    
     
     public Integer initDB(String projectPath) {
     	DB.getInstance().setup();
@@ -100,13 +111,18 @@ public class RascalJavaInterface {
 
 	public static void main(String[] args) {
 		RascalJavaInterface rascalJavaInterface = new RascalJavaInterface(null);
-		rascalJavaInterface.initDB("/Users/uriel/Documents/Projetos/pessoal/testeRascal/src");
+		rascalJavaInterface.initDB("/Users/uriel/Documents/Projetos/pessoal/rascal/src");
 		DB.getInstance().fetchFromDb();
-		System.out.println(rascalJavaInterface.isCollection("main.java.TesteForEach2Funcional", "list"));
+//		System.out.println(rascalJavaInterface.isCollection("main.java.TesteForEach2Funcional", "list"));
 	}
 	
-	public IValue isCollection(IString className, IString fieldName) {
-		return vf.bool(isCollection(className.getValue(), fieldName.getValue()));
+	public IValue isCollection(IString className, IString fieldName) throws Exception {		
+		Collections.sort(
+		Arrays.asList(1,2,3),
+		(o1, o2) -> {
+			if(o1 < 0 || o2 < 0) throw new Exception();
+			return o1.compareTo(o2);	
+		});
 		
 	}
 	
@@ -115,7 +131,7 @@ public class RascalJavaInterface {
 		if(fieldType.endsWith("[]")) {
 			return false; 
 		} else {
-			return isRelated(fieldType, "java.util.Collection");
+			return isRelated(fieldType, "java.utiel.Collection");
 		}
 	}
 	
@@ -131,14 +147,6 @@ public class RascalJavaInterface {
 	public IValue isRelated(IString clazzA, IString clazzB) {
     	return vf.bool(isRelated(clazzA.getValue(), clazzB.getValue()));
     }
-    
-    public IValue getQualifiedName(IString clazz) {
-    	return vf.string(DB.getInstance().findQualifiedName(clazz.getValue().trim()));
-    }
-    
-    public static String getQualifiedName(String clazz) {
-    	return DB.getInstance().findQualifiedName("TesteException");
-    }
 
     public boolean isRelated(String clazzA, String clazzB) {
     	String qualifiedClazzA = DB.getInstance().findQualifiedName(clazzA);
@@ -148,14 +156,6 @@ public class RascalJavaInterface {
     	} 
     	List<ClassDefinition> classAAncestors = DB.getInstance().getAllAncestors(qualifiedClazzA);
     	List<ClassDefinition> classBAncestors = DB.getInstance().getAllAncestors(qualifiedClazzB);
-    	if(classAAncestors.isEmpty() && qualifiedClazzA != null) {
-    		processor.processClass(solver.solveType(qualifiedClazzA));
-    		classAAncestors = DB.getInstance().getAllAncestors(qualifiedClazzA);
-    	}
-    	if(classBAncestors.isEmpty() && qualifiedClazzB != null) {
-    		processor.processClass(solver.solveType(qualifiedClazzB));
-    		classBAncestors = DB.getInstance().getAllAncestors(qualifiedClazzB);
-    	}
     	return classAAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzB)) || 
     			classBAncestors.stream().anyMatch((a) -> a.getQualifiedName().equals(qualifiedClazzA));
     }
